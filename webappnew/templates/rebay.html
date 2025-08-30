@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN WebApp - Продление подписки</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        {% include 'header.html' %}
+
+        <main>
+            <!-- Purchase Header -->
+            <div class="purchase-header">
+                <h2>Продление подписки</h2>
+                <p>Выберите подписку и период продления</p>
+            </div>
+
+            <!-- Subscription Selector -->
+            <div class="server-selector">
+                <label for="subscription-select">Выберите подписку для продления:</label>
+                <div class="custom-select" id="subscription-select-container">
+                    <div class="select-selected" id="subscription-selected">
+                        
+                        <span class="subscription-info">Выберите подписку</span>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                    <div class="select-items select-hide" id="subscription-options">
+                        <!-- Subscriptions will be loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tariff Grid -->
+            <div class="tariff-grid" id="tariff-grid">
+                {% if servers and servers|length > 0 %}
+                    {% set first_server_id = servers[0]['id']|string %}
+                    {% if server_tariffs[first_server_id] %}
+                        {% for tariff in server_tariffs[first_server_id] %}
+                        <div class="tariff-card{% if loop.first %} selected{% endif %}" 
+                             data-server="{{ first_server_id }}" 
+                             data-tariff-id="{{ tariff.id }}" 
+                             data-days="{{ tariff.days }}" 
+                             data-price="{{ tariff.price }}">
+                            <div class="tariff-duration">{{ tariff.name }}</div>
+                            <div class="tariff-price">{{ tariff.price }}₽</div>
+                            {% if tariff.is_popular %}
+                            <div class="popular-badge">Популярный</div>
+                            {% endif %}
+                            {% if tariff.savings_percent > 0 %}
+                            <div class="tariff-savings">Экономия {{ tariff.savings_percent }}%</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Selection Summary -->
+            <div class="selection-summary">
+                <div class="selected-info">
+                    <span>Продлить на: <span id="selected-period">1 месяц</span></span>
+                    <span id="selected-subscription">Выберите подписку</span>
+                </div>
+                <button class="btn btn-primary payment-btn" id="payment-button" disabled>
+                    <i class="fas fa-refresh"></i>
+                    Продлить за <span id="payment-amount">99₽</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        {% include 'footer.html' %}
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification" style="display: none;"></div>
+
+    <!-- Payment Waiting Modal -->
+    <div id="payment-waiting-modal" class="pay-waiting-modal">
+        <div class="pay-waiting-modal-content">
+            <span class="pay-waiting-modal-close" onclick="renewalManager.hidePaymentWaitingModal()">&times;</span>
+            
+            <div class="pay-waiting-spinner"></div>
+            
+            <div class="pay-waiting-text" id="payment-waiting-text">
+                Обработка продления подписки...
+            </div>
+            
+            <div class="pay-waiting-countdown" id="payment-countdown" style="font-size: 18px; font-weight: bold; color: #007bff; margin: 10px 0;">
+                Осталось времени: 11:00
+            </div>
+            
+            <div class="pay-waiting-info">
+                <p><span class="highlight">Платеж определится автоматически</span> системой после вашей оплаты.</p>
+                <p><strong>Важно:</strong> Если вы оплатили, <span class="highlight" style="color: red;">не закрывайте это окно</span>, пока система не обнаружит ваш платеж.</p>
+            </div>
+            
+            <div class="pay-waiting-actions">
+                <button class="pay-waiting-btn pay" id="payment-waiting-pay-btn">
+                    Оплатить
+                </button>
+                <button class="pay-waiting-btn cancel" id="payment-waiting-cancel-btn">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="payment-success-modal" class="pay-waiting-modal">
+        <div class="pay-waiting-modal-content">
+            <span class="pay-waiting-modal-close" onclick="renewalManager.hideSuccessModal()">&times;</span>
+            
+            <div class="pay-waiting-spinner">
+                <div>✓</div>
+            </div>
+            
+            <div class="pay-waiting-text" id="success-modal-text">
+                Подписка успешно продлена!
+            </div>
+            
+            <div class="pay-waiting-info" id="success-modal-info">
+                <p><span class="highlight">Ваша подписка продлена!</span></p>
+                <p><strong>Новая дата окончания:</strong><br> 
+                    <span id="success-end-date" style="font-weight: bold; color: #4CAF50;"></span>
+                </p>
+                <p><strong>Сервер:</strong> <span id="success-server-name"></span></p>
+            </div>
+            
+            <div class="pay-waiting-actions">
+                <button class="pay-waiting-btn pay" onclick="renewalManager.goToProfile()">
+                    Профиль
+                </button>
+                <button class="pay-waiting-btn cancel" onclick="renewalManager.hideSuccessModal()">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-modal">&times;</span>
+            
+            <h2>Подтверждение продления</h2>
+            <div class="subscription-details">
+                <p class="subscription-text">Продлить подписку <b><span id="subscription-name">Выберите подписку</span></b> на <b><span id="subscription-period">1 месяц</span></b></p>
+            </div>
+
+            <div class="payment-methods">
+                <h3>Выбор способа оплаты</h3>
+                <div class="payment-slider" id="payment-methods-container">
+                    <div class="payment-option active" data-method="card">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Карта</span>
+                    </div>
+                    <div class="payment-option" data-method="balance">
+                        <i class="fas fa-wallet"></i>
+                        <span>Баланс</span>
+                    </div>
+                    <!-- <div class="payment-option" data-method="crypto">
+                        <i class="fab fa-bitcoin"></i>
+                        <span>Крипта</span> 
+                    </div> -->
+                </div>
+            </div>
+
+            <div class="balance-info">
+                <p class="balance-text">Ваш баланс: <span id="user-balance">0₽</span></p>
+            </div>
+
+            <div class="promo-section">
+                <div class="promo-header">
+                    <p class="promo-text">У меня есть промокод</p>
+                    <button class="promo-add-btn" id="promo-add-btn">+</button>
+                </div>
+                <div class="promo-input-container" id="promo-input-container" style="display: none;">
+                    <input type="text" id="promo-input" placeholder="Введите промокод">
+                    <button id="apply-promo">Применить</button>
+                </div>
+            </div>
+
+            <button class="final-payment-button" id="final-payment-button">
+                Продлить за <span id="final-payment-amount">99₽</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = {{ user_id|tojson }};
+            const serversData = {{ servers|tojson if servers else '[]' }};
+            const serverTariffsData = {{ server_tariffs|tojson if server_tariffs else '{}' }};
+            window.renewalManager = new RenewalManager(userId, serversData, serverTariffsData);
+        });
+
+        class RenewalManager {
+            constructor(userId, serversData, serverTariffsData) {
+                this.userId = userId;
+                this.serversData = serversData || [];
+                this.serverTariffsData = serverTariffsData || {};
+                this.userSubscriptions = [];
+                this.userBalance = 0;
+
+                this.selectedSubscriptionId = null;
+                this.selectedSubscriptionName = 'Выберите подписку';
+                this.selectedTariffId = null;
+
+                this.paymentTrackingInterval = null;
+                this.countdownInterval = null;
+                this.currentPaymentId = null;
+                this.pollingCounter = 0; // Add a counter for polling attempts
+                
+                this.init();
+            }
+            
+            init() {
+                this.cacheDOMElements();
+                this.bindEvents();
+                this.loadUserSubscriptions();
+            }
+
+            cacheDOMElements() {
+                this.dom = {
+                    paymentButton: document.getElementById('payment-button'),
+                    subscriptionSelect: document.getElementById('subscription-selected'),
+                    subscriptionOptions: document.getElementById('subscription-options'),
+                    tariffGrid: document.getElementById('tariff-grid'),
+                    selectedPeriod: document.getElementById('selected-period'),
+                    selectedSubscription: document.getElementById('selected-subscription'),
+                    paymentAmount: document.getElementById('payment-amount'),
+                    // Modals
+                    paymentModal: document.getElementById('payment-modal'),
+                    closeModal: document.getElementById('close-modal'),
+                    finalPaymentButton: document.getElementById('final-payment-button'),
+                    paymentWaitingModal: document.getElementById('payment-waiting-modal'),
+                    paymentSuccessModal: document.getElementById('payment-success-modal'),
+                    paymentWaitingPayBtn: document.getElementById('payment-waiting-pay-btn'),
+                    paymentWaitingCancelBtn: document.getElementById('payment-waiting-cancel-btn'),
+                    // Modal Fields
+                    userBalance: document.getElementById('user-balance'),
+                    subscriptionTextModal: document.querySelector('.subscription-text'),
+                    finalPaymentAmountModal: document.getElementById('final-payment-amount'),
+                    successEndDate: document.getElementById('success-end-date'),
+                    successServerName: document.getElementById('success-server-name'),
+                    paymentCountdown: document.getElementById('payment-countdown'),
+                    notification: document.getElementById('notification'),
+                };
+            }
+
+            bindEvents() {
+                this.dom.paymentButton.addEventListener('click', () => this.showPaymentModal());
+                this.dom.subscriptionSelect.addEventListener('click', () => this.dom.subscriptionOptions.classList.toggle('select-hide'));
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.custom-select')) {
+                        this.dom.subscriptionOptions.classList.add('select-hide');
+                    }
+                });
+                // Modal events
+                this.dom.closeModal.addEventListener('click', () => this.hidePaymentModal());
+                this.dom.paymentModal.addEventListener('click', (event) => {
+                    if (event.target === this.dom.paymentModal) {
+                        this.hidePaymentModal();
+                    }
+                });
+                this.dom.finalPaymentButton.addEventListener('click', () => this.processFinalPayment());
+                this.dom.paymentWaitingCancelBtn.addEventListener('click', () => this.hidePaymentWaitingModal());
+
+                // Add listeners for payment method selection
+                document.querySelectorAll('#payment-modal .payment-option').forEach(option => {
+                    option.addEventListener('click', (e) => this.selectPaymentMethod(e.currentTarget));
+                });
+
+                // Add listeners for success modal buttons
+                this.dom.paymentSuccessModal.querySelector('.pay-waiting-modal-close').addEventListener('click', () => this.hideSuccessModal());
+                this.dom.paymentSuccessModal.querySelector('.pay').addEventListener('click', () => this.goToProfile());
+                this.dom.paymentSuccessModal.querySelector('.cancel').addEventListener('click', () => this.hideSuccessModal());
+            }
+
+            selectPaymentMethod(selectedOption) {
+                document.querySelectorAll('#payment-modal .payment-option').forEach(option => option.classList.remove('active'));
+                selectedOption.classList.add('active');
+            }
+
+            async loadUserSubscriptions() {
+                try {
+                    const response = await fetch(`/api/user-subscriptions`);
+                    if (!response.ok) throw new Error('Failed to load subscriptions');
+                    const data = await response.json();
+                    this.userSubscriptions = data.subscriptions || [];
+                    this.renderSubscriptions();
+                } catch (error) {
+                    console.error('Error loading user subscriptions:', error);
+                    this.showNotification('Ошибка загрузки подписок', 'error');
+                }
+            }
+
+            renderSubscriptions() {
+                const container = this.dom.subscriptionOptions;
+                container.innerHTML = '';
+                if (this.userSubscriptions.length === 0) {
+                    container.innerHTML = '<div class="select-item no-subscriptions">У вас нет активных подписок для продления</div>';
+                    this.updateDisplay();
+                    return;
+                }
+                this.userSubscriptions.forEach(sub => {
+                    const item = document.createElement('div');
+                    item.className = 'select-item';
+                    item.dataset.subscriptionId = sub.id;
+                    item.dataset.serverId = sub.server_id;
+                    item.innerHTML = sub.display_name_option;
+                    item.addEventListener('click', () => this.selectSubscription(sub.id, sub.server_id, sub.display_name_selected));
+                    container.appendChild(item);
+                });
+
+                // Select first subscription by default
+                const firstSub = this.userSubscriptions[0];
+                this.selectSubscription(firstSub.id, firstSub.server_id, firstSub.display_name_selected);
+            }
+
+            selectSubscription(subscriptionId, serverId, displayNameSelected) {
+                this.selectedSubscriptionId = subscriptionId;
+                const sub = this.userSubscriptions.find(s => s.id === subscriptionId);
+                this.selectedSubscriptionName = sub ? sub.server_name : 'Неизвестно';
+
+                this.dom.subscriptionSelect.querySelector('.subscription-info').innerHTML = displayNameSelected;
+                this.dom.subscriptionOptions.classList.add('select-hide');
+
+                this.updateTariffsForServer(serverId);
+                this.updateDisplay();
+            }
+
+            updateTariffsForServer(serverId) {
+                const tariffs = this.serverTariffsData[String(serverId)] || [];
+                this.dom.tariffGrid.innerHTML = '';
+                if (tariffs.length === 0) {
+                    this.dom.tariffGrid.innerHTML = '<p>Нет тарифов для этого сервера.</p>';
+                    this.selectedTariffId = null;
+                    return;
+                }
+                tariffs.forEach((tariff, index) => {
+                    const card = document.createElement('div');
+                    card.className = `tariff-card${index === 0 ? ' selected' : ''}`;
+                    card.dataset.tariffId = tariff.id;
+                    card.dataset.price = tariff.price;
+                    card.innerHTML = `<div class="tariff-duration">${tariff.name}</div><div class="tariff-price">${tariff.price}₽</div>`;
+                    card.addEventListener('click', () => this.selectTariff(tariff.id));
+                    this.dom.tariffGrid.appendChild(card);
+                });
+                this.selectTariff(tariffs[0].id);
+            }
+
+            selectTariff(tariffId) {
+                this.selectedTariffId = tariffId;
+                document.querySelectorAll('.tariff-card').forEach(card => card.classList.remove('selected'));
+                const selectedCard = document.querySelector(`[data-tariff-id="${tariffId}"]`);
+                if (selectedCard) selectedCard.classList.add('selected');
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const selectedCard = document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`);
+                const price = selectedCard ? parseFloat(selectedCard.dataset.price) : 0;
+                const period = selectedCard ? selectedCard.querySelector('.tariff-duration').textContent : "N/A";
+
+                this.dom.selectedPeriod.textContent = period;
+                this.dom.selectedSubscription.textContent = this.selectedSubscriptionName;
+                this.dom.paymentAmount.textContent = `${price}₽`;
+                this.dom.paymentButton.disabled = !this.selectedSubscriptionId || !this.selectedTariffId;
+            }
+
+            async showPaymentModal() {
+                if (!this.selectedSubscriptionId || !this.selectedTariffId) {
+                    this.showNotification('Выберите подписку и тариф для продления.', 'error');
+                    return;
+                }
+                
+                // Set a loading state
+                this.dom.subscriptionTextModal.innerHTML = 'Загрузка...';
+
+                try {
+                    const response = await fetch('/api/renewal/calculate_text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            subscription_id: this.selectedSubscriptionId,
+                            tariff_id: this.selectedTariffId
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.dom.subscriptionTextModal.innerHTML = data.renewal_text;
+                    } else {
+                        this.dom.subscriptionTextModal.innerHTML = `Ошибка: ${data.error || 'Не удалось рассчитать'}`;
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching renewal text:', error);
+                    this.dom.subscriptionTextModal.innerHTML = 'Ошибка при расчете. Попробуйте еще раз.';
+                }
+
+                const selectedCard = document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`);
+                const price = selectedCard ? parseFloat(selectedCard.dataset.price) : 0;
+                this.dom.finalPaymentAmountModal.textContent = `${price}₽`;
+
+                await this.loadUserBalance();
+                this.dom.paymentModal.classList.add('show');
+            }
+
+            hidePaymentModal() { this.dom.paymentModal.classList.remove('show'); }
+
+            async loadUserBalance() {
+                 try {
+                    const response = await fetch('/api/user-balance');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    this.userBalance = data.balance;
+                    this.dom.userBalance.textContent = `${this.userBalance.toFixed(2)}₽`;
+                } catch (error) {
+                    console.error('Ошибка при загрузке баланса:', error);
+                    this.dom.userBalance.textContent = 'Ошибка';
+                }
+            }
+
+            async processFinalPayment() {
+                const paymentMethod = document.querySelector('.payment-option.active').dataset.method;
+                const price = parseFloat(document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`).dataset.price);
+                if (paymentMethod === 'balance' && this.userBalance < price) {
+                    this.showNotification('Недостаточно средств на балансе', 'error');
+                    return;
+                }
+
+                this.hidePaymentModal();
+                
+                const endpoint = paymentMethod === 'balance' ? '/api/renewal/from_balance' : '/api/renewal/create_yookassa';
+                if (paymentMethod === 'card') this.showPaymentWaitingModal();
+                else this.showNotification('Обработка продления...', 'info');
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            subscription_id: this.selectedSubscriptionId,
+                            tariff_id: this.selectedTariffId,
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        this.hidePaymentWaitingModal();
+                        this.showNotification(data.error || 'Ошибка при продлении', 'error');
+                        return;
+                    }
+
+                    if (paymentMethod === 'balance') {
+                        // Balance payment returns a flat success object
+                        this.showSuccessModal(data);
+                    } else if (data.payment_id && data.payment_url) {
+                        // Card payment initiates tracking
+                        window.open(data.payment_url, '_blank');
+                        this.currentPaymentId = data.payment_id;
+                        this.dom.paymentWaitingPayBtn.onclick = () => window.open(data.payment_url, '_blank');
+                        this.startPaymentTracking(data.payment_id);
+                    }
+                } catch (e) {
+                    this.hidePaymentWaitingModal();
+                    this.showNotification('Сетевая ошибка', 'error');
+                }
+            }
+
+            startPaymentTracking(paymentId) {
+                this.stopPaymentTracking();
+                this.pollingCounter = 0; // Reset counter
+                this.startCountdownTimer(660);
+                // --- FIX: Add a delay before starting to poll to prevent race condition ---
+                setTimeout(() => {
+                    if (this.currentPaymentId === paymentId) {
+                        this.checkPaymentStatus(paymentId); // Initial check
+                        this.paymentTrackingInterval = setInterval(() => this.checkPaymentStatus(paymentId), 2000); // Check every 2 seconds
+                    }
+                }, 3000); // 3-second delay
+            }
+
+            async checkPaymentStatus(paymentId) {
+                if (!this.currentPaymentId) return;
+                try {
+                    const response = await fetch('/api/renewal/get_tracking_status', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ payment_id: paymentId })
+                    });
+                    const statusInfo = await response.json();
+
+                    if (statusInfo.status === 'processed') {
+                        this.stopPaymentTracking();
+                        this.hidePaymentWaitingModal();
+                        // Backend returns a nested 'result' object for card payments
+                        if (statusInfo.result && statusInfo.result.success) {
+                            this.showSuccessModal(statusInfo.result);
+                        } else {
+                            const errorMessage = statusInfo.result ? statusInfo.result.error : 'Ошибка обработки платежа.';
+                            this.showNotification(errorMessage, 'error');
+                        }
+                    } else if (statusInfo.status === 'not_found') {
+                        this.stopPaymentTracking();
+                        this.hidePaymentWaitingModal();
+                        this.showNotification('Время ожидания оплаты истекло.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error checking payment status:', error);
+                    this.stopPaymentTracking();
+                    this.hidePaymentWaitingModal();
+                    this.showNotification('Ошибка проверки статуса платежа.', 'error');
+                }
+            }
+
+            startCountdownTimer(totalSeconds) {
+                const timer = () => {
+                    if (totalSeconds <= 0) { this.stopPaymentTracking(); return; }
+                    totalSeconds--;
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    this.dom.paymentCountdown.textContent = `Осталось времени: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                };
+                timer();
+                this.countdownInterval = setInterval(timer, 1000);
+            }
+
+            stopPaymentTracking() {
+                clearInterval(this.paymentTrackingInterval);
+                clearInterval(this.countdownInterval);
+                this.paymentTrackingInterval = null;
+                this.countdownInterval = null;
+                this.currentPaymentId = null;
+            }
+
+            showPaymentWaitingModal() { 
+                this.dom.paymentWaitingModal.style.display = 'flex';
+                this.dom.paymentWaitingModal.style.alignItems = 'center';
+                this.dom.paymentWaitingModal.style.justifyContent = 'center';
+            }
+            hidePaymentWaitingModal() { this.dom.paymentWaitingModal.style.display = 'none'; this.stopPaymentTracking(); }
+
+            showSuccessModal(data) {
+                this.dom.successEndDate.textContent = data.end_date_formatted || 'N/A';
+                this.dom.successServerName.textContent = data.server_name || 'N/A';
+                this.dom.paymentSuccessModal.style.display = 'flex';
+                this.dom.paymentSuccessModal.style.alignItems = 'center';
+                this.dom.paymentSuccessModal.style.justifyContent = 'center';
+            }
+
+            hideSuccessModal() { this.dom.paymentSuccessModal.style.display = 'none'; }
+            goToProfile() { window.location.href = `{{ url_for('profile') }}`; }
+
+            showNotification(message, type = 'info') {
+                if (this.dom.notification) {
+                    this.dom.notification.textContent = message;
+                    this.dom.notification.className = `notification show ${type}`;
+                    setTimeout(() => { this.dom.notification.classList.remove('show'); }, 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

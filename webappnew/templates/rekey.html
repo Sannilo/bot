@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN WebApp - Замена ключа</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Плавное закрытие модальных окон */
+        .pay-waiting-modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .pay-waiting-modal.closing {
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+        
+        .pay-waiting-modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .pay-waiting-modal.closing .pay-waiting-modal-content {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% include 'header.html' %}
+
+        <main>
+            <div class="purchase-header">
+                <h2>Замена ключа VPN</h2>
+                <p>Выберите ключ для замены и новый сервер</p>
+            </div>
+
+            <div class="server-selector">
+                <label for="current-key-select">Выберите ключ для замены:</label>
+                <div class="custom-select" id="current-key-select-container">
+                    <div class="select-selected" id="current-key-selected">
+                        <span class="subscription-info">Выберите ключ</span>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                    <div class="select-items select-hide" id="current-key-options">
+                        </div>
+                </div>
+            </div>
+
+            <div class="server-selector">
+                <label for="new-server-select">Выберите новый сервер:</label>
+                <div class="custom-select" id="new-server-select-container">
+                    <div class="select-selected" id="new-server-selected">
+                        <span class="server-name">Выберите сервер</span>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                    <div class="select-items select-hide" id="new-server-options">
+                        </div>
+                </div>
+            </div>
+
+            <div class="tariff-grid" style=" grid-template-columns: 1fr; ">
+                <div class="tariff-card selected replacement-info">
+                    <div class="tariff-duration">Замена ключа</div>
+                    <div class="tariff-price">Бесплатно</div>
+                     
+                </div>
+            </div>
+
+            <div class="selection-summary">
+                <div class="selected-info">
+                    <span>Заменить: <span id="selected-current-key" style="color: #00ff88;">Выберите ключ</span></span>
+                    <span>На сервер: <span id="selected-new-server" style="color: #00ff88;">Выберите сервер</span></span>
+                </div>
+                <button class="btn btn-primary payment-btn" id="replace-button" disabled>
+                    <i class="fas fa-exchange-alt"></i>
+                    Заменить бесплатно
+                </button>
+            </div>
+        </main>
+
+        <div id="confirmationModal" class="pay-waiting-modal">
+            <div class="pay-waiting-modal-content">
+                <span class="pay-waiting-modal-close" onclick="window.replacementManager.hideConfirmationModal()">&times;</span>
+                
+                <div class="pay-waiting-spinner" style="background: #ff9800; animation: none;">
+                    <div style="color: white; font-size: 24px;">!</div>
+                </div>
+                
+                <div class="pay-waiting-text">
+                    Подтверждение замены ключа
+                </div>
+                
+                <div class="pay-waiting-info" style="padding: 1px 15px;">
+                    <div class="replacement-summary" style="text-align: left; margin: 20px 0;">
+                        <div style="margin-bottom: 15px; text-align: center;">
+                            <strong>перенос ключа:</strong><br>
+                            с <span id="currentKeyServer" style="color: #00cc6a;">-</span> в <span id="newServerName" style="color: #00cc6a;">-</span> ↓<br>
+                            <span style="color: #ff9800; font-size: 14px;">- Ваш срок сохраниться <span id="currentKeyExpiry" class="expiry-info">-</span></span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; padding: 10px; margin: 15px 0; border-radius: 5px;">
+                        <p style="margin: 0; color: #ff9800; font-size: 11px;">
+                            ⚠️ После замены старый ключ перестанет работать. Убедитесь, что вы готовы к замене.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="pay-waiting-actions">
+
+                    <button class="pay-waiting-btn pay" id="finalReplaceButton">
+                        Заменить ключ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="newKeyModal" class="pay-waiting-modal">
+            <div class="pay-waiting-modal-content">
+                <span class="pay-waiting-modal-close" onclick="window.replacementManager.hideNewKeyModal()">&times;</span>
+                
+                <div class="pay-waiting-spinner">
+                    <div>✓</div>
+                </div>
+                
+                <div class="pay-waiting-text">
+                    Ключ успешно заменен!
+                </div>
+                
+                <div class="pay-waiting-info">
+                    <p><strong>Ваш ключ:</strong><br>
+                        <div class="key-display-container">
+                            <span id="newKeyValue" class="key-text-display">Новый ключ будет здесь</span>
+                            <button id="copyNewKeyButton" class="copy-key-btn-modal" title="Скопировать ключ">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </p>
+                </div>
+                
+                <div class="pay-waiting-actions">
+                    <button class="pay-waiting-btn pay" onclick="replacementManager.redirectToProfile()">
+                        Перейти в профиль
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        {% include 'footer.html' %}
+    </div>
+
+    <div class="notification" id="notification" style="display: none;"></div>
+
+    <script>
+        // Key replacement page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+            
+            const userId = {{ user_id if user_id else 'null' }};
+            window.replacementManager = new ReplacementManager(userId);
+        });
+
+        class ReplacementManager {
+            constructor(userId) {
+                this.userId = userId;
+                this.selectedCurrentKey = null;
+                this.selectedCurrentKeyName = 'Выберите ключ';
+                this.selectedCurrentKeyServerName = 'Выберите ключ';
+                this.selectedNewServer = null;
+                this.selectedNewServerName = 'Выберите сервер';
+                this.userKeys = [];
+                this.availableServers = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.setupCustomSelects();
+                this.loadUserKeys();
+            }
+
+            async loadUserKeys() {
+                try {
+                    const response = await fetch(`/api/replace/user-keys`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.userKeys = data.keys;
+                    } else {
+                        this.showNotification('Ошибка загрузки ключей: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                        this.userKeys = [];
+                    }
+                    this.renderCurrentKeys();
+                } catch (error) {
+                    this.showNotification('Не удалось загрузить ключи пользователя', 'error');
+                    console.error('Error loading user keys:', error);
+                }
+            }
+
+            async loadAvailableServers() {
+                if (!this.selectedCurrentKey) {
+                    this.availableServers = [];
+                    this.renderAvailableServers();
+                    return;
+                }
+                
+                try {
+                    const currentKey = this.userKeys.find(k => k.id == this.selectedCurrentKey);
+                    if (!currentKey) return;
+                    
+                    const currentServerId = currentKey.server_id;
+                    const protocol = currentKey.protocol.toLowerCase();
+                    
+                    const response = await fetch(`/api/replace/available-servers/${currentServerId}/${protocol}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.availableServers = data.servers;
+                    } else {
+                        this.showNotification('Ошибка загрузки серверов: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                        this.availableServers = [];
+                    }
+                    this.renderAvailableServers();
+                } catch (error) {
+                    this.showNotification('Не удалось загрузить доступные серверы', 'error');
+                    console.error('Error loading servers:', error);
+                }
+            }
+
+            renderCurrentKeys() {
+                const container = document.getElementById('current-key-options');
+                if (!container) return;
+
+                if (this.userKeys.length === 0) {
+                    container.innerHTML = '<div class="select-item no-keys">У вас нет активных ключей</div>';
+                    return;
+                }
+
+                container.innerHTML = this.userKeys.map(key => {
+                    return `
+                        <div class="select-item" data-key-id="${key.id}">
+                            ${key.display_name_option}
+                        </div>`;
+                }).join('');
+
+                this.setupCurrentKeySelect();
+                
+                if (this.userKeys.length > 0 && !this.selectedCurrentKey) {
+                    this.selectDefaultKey();
+                }
+            }
+
+            selectDefaultKey() {
+                const firstKey = this.userKeys[0];
+                this.selectCurrentKey(firstKey.id, firstKey.display_name_selected, firstKey.server_name);
+                const selected = document.getElementById('current-key-selected');
+                if (selected) {
+                    selected.querySelector('.subscription-info').innerHTML = firstKey.display_name_selected;
+                }
+            }
+
+
+            renderAvailableServers() {
+                const container = document.getElementById('new-server-options');
+                if (!container) return;
+
+                if (this.availableServers.length === 0) {
+                    container.innerHTML = '<div class="select-item no-servers">Нет доступных серверов</div>';
+                    this.selectNewServer(null, 'Нет доступных серверов');
+                    return;
+                }
+
+                container.innerHTML = this.availableServers.map(server => {
+                    const availabilityClass = server.available ? '' : 'disabled';
+                    const availabilityText = server.available ? '' : ' (недоступен)';
+                    return `<div class="select-item ${availabilityClass}" data-server-id="${server.id}" ${!server.available ? 'data-disabled="true"' : ''}><span class="server-name">${server.name}${availabilityText}</span></div>`;
+                }).join('');
+
+                this.setupNewServerSelect();
+                
+                const availableServers = this.availableServers.filter(server => server.available);
+                if (availableServers.length > 0) {
+                    const firstServer = availableServers[0];
+                    this.selectNewServer(firstServer.id, firstServer.name);
+                    document.getElementById('new-server-selected').querySelector('.server-name').textContent = firstServer.name;
+                } else {
+                    this.selectNewServer(null, 'Нет доступных серверов');
+                    document.getElementById('new-server-selected').querySelector('.server-name').textContent = 'Нет доступных серверов';
+                }
+            }
+
+            setupCurrentKeySelect() {
+                document.querySelectorAll('#current-key-options .select-item').forEach(option => {
+                    option.addEventListener('click', () => {
+                        const keyId = option.dataset.keyId;
+                        if (!keyId) return;
+                        const key = this.userKeys.find(k => k.id == keyId);
+                        if (key) {
+                            const selected = document.getElementById('current-key-selected');
+                            selected.querySelector('.subscription-info').innerHTML = key.display_name_selected;
+                            document.getElementById('current-key-options').classList.add('select-hide');
+                            selected.classList.remove('select-arrow-active');
+                            this.selectCurrentKey(keyId, key.display_name_selected, key.server_name);
+                        }
+                    });
+                });
+            }
+
+            setupNewServerSelect() {
+                document.querySelectorAll('#new-server-options .select-item').forEach(option => {
+                    if (option.dataset.disabled === 'true') return;
+                    option.addEventListener('click', () => {
+                        const serverId = option.dataset.serverId;
+                        if (!serverId) return;
+                        const server = this.availableServers.find(s => s.id == serverId);
+                        if (server && server.available) {
+                            const selected = document.getElementById('new-server-selected');
+                            selected.querySelector('.server-name').textContent = server.name;
+                            document.getElementById('new-server-options').classList.add('select-hide');
+                            selected.classList.remove('select-arrow-active');
+                            this.selectNewServer(serverId, server.name);
+                        }
+                    });
+                });
+            }
+
+            selectCurrentKey(keyId, displayName, serverName) {
+                this.selectedCurrentKey = keyId;
+                this.selectedCurrentKeyName = displayName;
+                this.selectedCurrentKeyServerName = serverName;
+                this.selectNewServer(null, 'Выберите сервер');
+                this.updateDisplay();
+                this.loadAvailableServers();
+            }
+
+            selectNewServer(serverId, serverName) {
+                this.selectedNewServer = serverId;
+                this.selectedNewServerName = serverName;
+                this.updateDisplay();
+            }
+
+            bindEvents() {
+                document.getElementById('replace-button').addEventListener('click', () => {
+                    if (!this.selectedCurrentKey || !this.selectedNewServer) {
+                        this.showNotification('Выберите ключ и новый сервер', 'error');
+                        return;
+                    }
+                    this.showConfirmationModal();
+                });
+                document.getElementById('finalReplaceButton').addEventListener('click', () => this.processReplacement());
+                document.getElementById('copyNewKeyButton').addEventListener('click', () => {
+                    const keyValue = document.getElementById('newKeyValue').textContent;
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(keyValue).then(() => this.showNotification('Скопировано!', 'success'));
+                    }
+                });
+            }
+
+            updateDisplay() {
+                document.getElementById('selected-current-key').innerHTML = this.selectedCurrentKeyServerName;
+                document.getElementById('selected-new-server').textContent = this.selectedNewServerName;
+                document.getElementById('replace-button').disabled = !this.selectedCurrentKey || !this.selectedNewServer;
+            }
+
+            setupCustomSelects() {
+                ['current-key', 'new-server'].forEach(type => {
+                    const container = document.getElementById(`${type}-select-container`);
+                    if (!container) return;
+                    const selected = container.querySelector('.select-selected');
+                    const items = container.querySelector('.select-items');
+                    if (selected && items) {
+                        selected.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const isHidden = items.classList.contains('select-hide');
+                            document.querySelectorAll('.select-items').forEach(it => it.classList.add('select-hide'));
+                            if(isHidden) items.classList.remove('select-hide');
+                        });
+                    }
+                });
+                document.addEventListener('click', () => {
+                    document.querySelectorAll('.select-items').forEach(items => items.classList.add('select-hide'));
+                });
+            }
+
+            showConfirmationModal() {
+                const currentKey = this.userKeys.find(k => k.id == this.selectedCurrentKey);
+                const newServer = this.availableServers.find(s => s.id == this.selectedNewServer);
+                if (currentKey) {
+                    document.getElementById('currentKeyServer').textContent = currentKey.server_name;
+                    document.getElementById('currentKeyExpiry').textContent = `${currentKey.days_left} дней`;
+                }
+                if (newServer) document.getElementById('newServerName').textContent = newServer.name;
+                const confirmationModal = document.getElementById('confirmationModal');
+                confirmationModal.style.display = 'flex';
+                confirmationModal.style.alignItems = 'center';
+                confirmationModal.style.justifyContent = 'center';
+            }
+            
+            hideConfirmationModal() {
+                document.getElementById('confirmationModal').style.display = 'none';
+            }
+            
+            showNewKeyModal(newKeyData) {
+                document.getElementById('newKeyValue').textContent = newKeyData.new_key;
+                document.getElementById('newKeyModal').style.display = 'flex';
+            }
+            
+            hideNewKeyModal() {
+                document.getElementById('newKeyModal').style.display = 'none';
+            }
+            
+            redirectToProfile() {
+                window.location.href = `{{ url_for('profile') }}`;
+            }
+            
+            async processReplacement() {
+                const replaceBtn = document.getElementById('finalReplaceButton');
+                const originalText = replaceBtn.textContent;
+                replaceBtn.textContent = 'Замена...';
+                replaceBtn.disabled = true;
+                try {
+                    const response = await fetch('/api/replace/execute', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ old_key_id: this.selectedCurrentKey, new_server_id: this.selectedNewServer })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        this.hideConfirmationModal();
+                        this.showNewKeyModal(data);
+                        this.showNotification('Ключ успешно заменен!', 'success');
+                        this.selectedCurrentKey = null;
+                        this.selectedNewServer = null;
+                        await this.loadUserKeys();
+                        this.renderAvailableServers();
+                        this.updateDisplay();
+                    } else {
+                        this.showNotification('Ошибка замены: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('Произошла ошибка при замене ключа.', 'error');
+                } finally {
+                    replaceBtn.textContent = originalText;
+                    replaceBtn.disabled = false;
+                    this.hideConfirmationModal();
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                if (notification) {
+                    notification.textContent = message;
+                    notification.className = `notification show ${type}`;
+                    setTimeout(() => { notification.classList.remove('show'); }, 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

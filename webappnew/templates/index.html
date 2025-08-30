@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR VPN - Личный кабинет</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        {% include 'header.html' %}
+        <main style="gap: 30px;">
+            <div class="subscription-card">
+                <div class="subscription-header">
+                    <div class="status-indicator {% if subscription.status == 'active' %}active{% elif subscription.status == 'expired' %}expired{% else %}inactive{% endif %}">
+                        <div class="status-dot"></div>
+                        <div class="pulse-ring"></div>
+                    </div>
+                    <div class="subscription-info">
+                        <h2 class="status-title">
+                            {% if subscription.status == 'active' %}
+                                Активна
+                            {% elif subscription.status == 'expired' %}
+                                Истекла
+                            {% else %}
+                                Неактивна
+                            {% endif %}
+                        </h2>
+                        {% if subscription.server_name %}
+                            <p class="server-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ subscription.server_name }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    {% if subscription.expiry_date %}
+                        <div class="expiry-info">
+                            <span class="expiry-date">{{ subscription.expiry_date }}</span>
+                            {% if subscription.status == 'active' %}
+                                <span class="days-left">{{ subscription.time_display }}</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if subscription.status == 'active' or subscription.status == 'expired' %}
+                <div class="subscription-progress">
+                    <div class="progress-info">
+                        <span class="progress-label">Использовано</span>
+                        <span class="progress-percentage">{{ subscription.progress_percent }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ subscription.progress_percent }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.location.href='{{ generate_url('purchase.html') }}'">
+                    <i class="fas fa-shopping-cart"></i>
+                    Купить подписку от 3,99₽
+                </button>
+
+                {% if subscription.status == 'active' %}
+                <button class="btn btn-secondary" onclick="window.location.href='{{ generate_url('renewal.html') }}'">
+                    <i class="fas fa-redo"></i>
+                    Продлить ключ VPN
+                </button>
+
+                <button class="btn btn-secondary" onclick="window.location.href='{{ generate_url('replace.html') }}'">
+                    <i class="fas fa-exchange-alt"></i>
+                    Заменить ключ VPN
+                </button>
+                {% endif %}
+
+                <button class="btn btn-secondary" onclick="window.location.href='{{ generate_url('installapp.html') }}'">
+                    <i class="fas fa-download"></i>
+                    Установка и настройка
+                </button>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="window.location.href='{{ generate_url('profile.html') }}'">
+                    <i class="fas fa-user"></i>
+                    <span>Профиль</span>
+                </button>
+                <button class="nav-btn" onclick="redirectToSupportPage()">
+                    <i class="fas fa-headset"></i>
+                    <span>Поддержка</span>
+                </button>
+            </div>
+        </main>
+        {% include 'footer.html' %}
+    </div>
+
+    <script>
+        function updateSubscriptionData(data) {
+            if (data.status === 'active') {
+                document.querySelector('.status-title').textContent = 'Активна';
+                document.querySelector('.days-left').textContent = data.time_display;
+                document.querySelector('.progress-fill').style.width = data.progress_percent + '%';
+                document.querySelector('.progress-percentage').textContent = data.progress_percent + '%';
+            } else if (data.status === 'expired') {
+                document.querySelector('.status-title').textContent = 'Истекла';
+            } else {
+                document.querySelector('.status-title').textContent = 'Неактивна';
+            }
+        }
+
+        function redirectToSupportPage() {
+            window.location.href = '{{ generate_url("support.html") }}';
+        }
+    </script>
+</body>
+</html>

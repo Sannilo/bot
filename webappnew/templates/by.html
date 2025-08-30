@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN WebApp - Покупка подписки</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        {% include 'header.html' %}
+
+        <main>
+            <!-- Purchase Header -->
+            <div class="purchase-header">
+                <h2>Покупка подписки</h2>
+                <p>Выберите интересующий тариф</p>
+            </div>
+
+            <!-- Server Selector -->
+            <div class="server-selector">
+                <label for="server-select">Выбор сервера:</label>
+                <div class="custom-select" id="server-select-container">
+                    <div class="select-selected" id="server-selected">
+                        <span class="server-flag">
+                            {% if servers and servers|length > 0 %}
+                                {% if 'Германия' in servers[0].name %}🇩🇪{% elif 'Нидерланды' in servers[0].name %}🇳🇱{% else %}🌍{% endif %}
+                            {% else %}
+                                🌍
+                            {% endif %}
+                        </span>
+                        <span class="server-name">
+                            {% if servers and servers|length > 0 %}
+                                {{ servers[0].name }}
+                            {% else %}
+                                Выберите сервер
+                            {% endif %}
+                        </span>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                    <div class="select-items select-hide" id="server-options">
+                        {% for server in servers %}
+                        <div class="select-item" data-value="{{ server.id }}" data-server-name="{{ server.name }}">
+                            <span class="server-flag">{% if 'Германия' in server.name %}🇩🇪{% elif 'Нидерланды' in server.name %}🇳🇱{% else %}🌍{% endif %}</span>
+                            <span class="server-name">{{ server.name }}</span>
+                            <span class="server-id">#{{ loop.index }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tariff Grid -->
+            <div class="tariff-grid" id="tariff-grid">
+                {% if servers and servers|length > 0 %}
+                    {% set first_server_id = servers[0].id|string %}
+                    {% if server_tariffs[first_server_id] %}
+                        {% for tariff in server_tariffs[first_server_id] %}
+                        <div class="tariff-card{% if loop.first %} selected{% endif %}" 
+                             data-server="{{ first_server_id }}" 
+                             data-tariff-id="{{ tariff.id }}" 
+                             data-days="{{ tariff.days }}" 
+                             data-price="{{ tariff.price }}">
+                            <div class="tariff-duration">{{ tariff.name }}</div>
+                            <div class="tariff-price">{{ tariff.price }}₽</div>
+                            {% if tariff.is_popular %}
+                            <div class="popular-badge">Популярный</div>
+                            {% endif %}
+                            {% if tariff.savings_percent > 0 %}
+                            <div class="tariff-savings">Экономия {{ tariff.savings_percent }}%</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Selection Summary -->
+            <div class="selection-summary">
+                <div class="selected-info">
+                    <span>Выбрано: <span id="selected-months">1 месяц</span></span>
+                    <span id="selected-server">Нидерланды</span>
+                </div>
+                <button class="btn btn-primary payment-btn" id="payment-button">
+                    <i class="fas fa-credit-card"></i>
+                    Оплатить <span id="payment-amount">99₽</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        {% include 'footer.html' %}
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification" style="display: none;"></div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-modal">&times;</span>
+            
+            <h2>Подтверждение подписки</h2>
+            <div class="subscription-details">
+                <p class="subscription-text">Подписка до <b><span id="subscription-end-date">00 00 0000</span>, <span id="subscription-days">00</span> дней</b></p>
+            </div>
+
+            <div class="payment-methods">
+                <h3>Выбор способа оплаты</h3>
+                <div class="payment-slider active" id="payment-methods-container">
+                    <div class="payment-option active" data-method="card">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Карта</span>
+                    </div>
+                    <div class="payment-option" data-method="balance">
+                        <i class="fas fa-wallet"></i>
+                        <span>Баланс</span>
+                    </div>
+                    <!-- <div class="payment-option" data-method="crypto">
+                        <i class="fab fa-bitcoin"></i>
+                        <span>Крипта</span> 
+                    </div> -->
+                </div>
+            </div>
+
+            <div class="balance-info">
+                <p class="balance-text">Ваш баланс: <span id="user-balance">0₽</span></p>
+            </div>
+
+            <div class="promo-section">
+                <div class="promo-header">
+                    <p class="promo-text">У меня есть промокод</p>
+                    <button class="promo-add-btn" id="promo-add-btn">+</button>
+                </div>
+                <div class="promo-input-container" id="promo-input-container" style="display: none;">
+                    <input type="text" id="promo-input" placeholder="Введите промокод">
+                    <button id="apply-promo">Применить</button>
+                </div>
+            </div>
+
+            <button class="final-payment-button" id="final-payment-button">
+                Оплатить <span id="final-payment-amount">99₽</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Payment Waiting Modal -->
+    <div id="payment-waiting-modal" class="pay-waiting-modal">
+        <div class="pay-waiting-modal-content">
+            <span class="pay-waiting-modal-close" onclick="app.hidePaymentWaitingModal()">&times;</span>
+            
+            <div class="pay-waiting-spinner"></div>
+            
+            <div class="pay-waiting-text">
+                Обработка вашего платежа...
+            </div>
+            
+            <div class="pay-waiting-countdown" id="payment-countdown" style="font-size: 18px; font-weight: bold; color: #007bff; margin: 10px 0;">
+                Осталось времени: 11:00
+            </div>
+            
+            <div class="pay-waiting-info">
+                <p><span class="highlight">Платеж определится автоматически</span> системой после вашей оплаты.</p>
+                <p><strong>Важно:</strong> Если вы оплатили, <span class="highlight" style="color: red;">не закрывайте это окно</span>, пока система не обнаружит ваш платеж.</p>
+            </div>
+            
+            <div class="pay-waiting-actions">
+                <button class="pay-waiting-btn pay" id="payment-waiting-pay-btn">
+                    Оплатить
+                </button>
+                <button class="pay-waiting-btn cancel" id="payment-waiting-cancel-btn">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="payment-success-modal" class="pay-waiting-modal">
+        <div class="pay-waiting-modal-content">
+            <span class="pay-waiting-modal-close" onclick="app.hideSuccessModal()">&times;</span>
+            
+            <div class="pay-waiting-spinner">
+                <div>✓</div>
+            </div>
+            
+            <div class="pay-waiting-text" id="success-modal-text">
+                Платеж успешно обработан!
+            </div>
+            
+            <div class="pay-waiting-info" id="success-modal-info">
+                <p><span class="highlight">Ваш новый ключ готов!</span></p>
+                <p><strong>Ключ:</strong><br>
+                    <div class="key-display-container">
+                        <span id="success-vless-key" class="key-text-display"></span>
+                        <button onclick="app.copyVlessKey()" class="copy-key-btn-modal" title="Скопировать ключ">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </p>
+            </div>
+            
+            <div class="pay-waiting-actions">
+                <button class="pay-waiting-btn pay" onclick="app.goToProfile()">
+                    Профиль
+                </button>
+                <button class="pay-waiting-btn cancel" onclick="app.hideSuccessModal()">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = {{ user_id|tojson }};
+            const serversData = {{ servers|tojson if servers else '[]' }};
+            const serverTariffsData = {{ server_tariffs|tojson if server_tariffs else '{}' }};
+            window.app = new PurchaseManager(userId, serversData, serverTariffsData);
+        });
+
+        class PurchaseManager {
+            constructor(userId, serversData, serverTariffsData) {
+                this.userId = userId;
+                this.serversData = serversData || [];
+                this.serverTariffsData = serverTariffsData || {};
+                this.userBalance = 0;
+                this.appliedPromo = null;
+                this.paymentTrackingInterval = null;
+                this.countdownInterval = null;
+                this.currentPaymentId = null;
+
+                if (this.serversData.length > 0) {
+                    this.selectedServer = String(this.serversData[0].id);
+                    this.selectedServerName = this.serversData[0].name;
+                    const firstServerTariffs = this.serverTariffsData[this.selectedServer] || [];
+                    this.selectedTariffId = firstServerTariffs.length > 0 ? String(firstServerTariffs[0].id) : null;
+                } else {
+                    this.selectedServer = null;
+                    this.selectedServerName = 'Нет доступных серверов';
+                    this.selectedTariffId = null;
+                }
+                
+                this.init();
+            }
+
+            init() {
+                this.cacheDOMElements();
+                this.bindEvents();
+                this.setupCustomSelect();
+                if (this.selectedServer) {
+                    this.updateTariffsForServer(this.selectedServer);
+                }
+                this.updateDisplay();
+            }
+
+            cacheDOMElements() {
+                this.dom = {
+                    paymentButton: document.getElementById('payment-button'),
+                    closeModal: document.getElementById('close-modal'),
+                    paymentModal: document.getElementById('payment-modal'),
+                    finalPaymentButton: document.getElementById('final-payment-button'),
+                    paymentWaitingCancelBtn: document.getElementById('payment-waiting-cancel-btn'),
+                    paymentWaitingModal: document.getElementById('payment-waiting-modal'),
+                    paymentSuccessModal: document.getElementById('payment-success-modal'),
+                    notification: document.getElementById('notification'),
+                    tariffGrid: document.getElementById('tariff-grid'),
+                    userBalance: document.getElementById('user-balance'),
+                    finalPaymentAmount: document.getElementById('final-payment-amount'),
+                    paymentAmount: document.getElementById('payment-amount'),
+                    selectedMonths: document.getElementById('selected-months'),
+                    selectedServer: document.getElementById('selected-server'),
+                    subscriptionEndDate: document.getElementById('subscription-end-date'),
+                    subscriptionDays: document.getElementById('subscription-days'),
+                    successVlessKey: document.getElementById('success-vless-key'),
+                    paymentCountdown: document.getElementById('payment-countdown'),
+                    paymentWaitingPayBtn: document.getElementById('payment-waiting-pay-btn')
+                };
+            }
+
+            bindEvents() {
+                this.dom.paymentButton.addEventListener('click', () => this.showPaymentModal());
+                this.dom.closeModal.addEventListener('click', () => this.hidePaymentModal());
+                this.dom.paymentModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'payment-modal') this.hidePaymentModal();
+                });
+                this.dom.finalPaymentButton.addEventListener('click', () => this.processFinalPayment());
+                this.dom.paymentWaitingCancelBtn.addEventListener('click', () => this.hidePaymentWaitingModal());
+                document.querySelectorAll('.payment-option').forEach(option => {
+                    option.addEventListener('click', (e) => this.selectPaymentMethod(e.currentTarget));
+                });
+            }
+
+            selectPaymentMethod(selectedOption) {
+                document.querySelectorAll('.payment-option').forEach(option => option.classList.remove('active'));
+                selectedOption.classList.add('active');
+            }
+
+            selectTariff(tariffId) {
+                this.selectedTariffId = tariffId;
+                document.querySelectorAll('.tariff-card').forEach(card => card.classList.remove('selected'));
+                const selectedCard = document.querySelector(`[data-tariff-id="${tariffId}"]`);
+                if (selectedCard) selectedCard.classList.add('selected');
+                this.updateDisplay();
+            }
+
+            updateTariffsForServer(serverId) {
+                const tariffs = this.serverTariffsData[serverId] || [];
+                this.dom.tariffGrid.innerHTML = '';
+                tariffs.forEach((tariff, index) => {
+                    const tariffCard = document.createElement('div');
+                    tariffCard.className = `tariff-card${index === 0 ? ' selected' : ''}`;
+                    tariffCard.dataset.tariffId = tariff.id;
+                    tariffCard.dataset.price = tariff.price;
+                    tariffCard.dataset.days = tariff.days; // FIX: Add missing data attribute
+                    tariffCard.innerHTML = `<div class="tariff-duration">${tariff.name}</div><div class="tariff-price">${tariff.price}₽</div>`;
+                    tariffCard.addEventListener('click', () => this.selectTariff(tariff.id));
+                    this.dom.tariffGrid.appendChild(tariffCard);
+                });
+                if (tariffs.length > 0) {
+                    this.selectTariff(tariffs[0].id);
+                } else {
+                    this.selectedTariffId = null;
+                }
+                this.updateDisplay();
+            }
+
+            calculatePrice() {
+                if (!this.selectedTariffId) return 0;
+                const selectedCard = document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`);
+                return selectedCard ? parseFloat(selectedCard.dataset.price) : 0;
+            }
+
+            updateDisplay() {
+                const price = this.calculatePrice();
+                const selectedCard = document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`);
+                const tariffName = selectedCard ? selectedCard.querySelector('.tariff-duration').textContent : 'Тариф не выбран';
+
+                this.dom.selectedMonths.textContent = tariffName;
+                this.dom.selectedServer.textContent = this.selectedServerName;
+                this.dom.paymentAmount.textContent = `${price}₽`;
+                this.dom.paymentButton.disabled = !this.selectedTariffId;
+            }
+
+            setupCustomSelect() {
+                const container = document.getElementById('server-select-container');
+                const selected = document.getElementById('server-selected');
+                const items = document.getElementById('server-options');
+                if (!selected || !items) return;
+                selected.addEventListener('click', () => items.classList.toggle('select-hide'));
+                document.querySelectorAll('#server-options .select-item').forEach(option => {
+                    option.addEventListener('click', () => {
+                        this.selectedServer = option.dataset.value;
+                        this.selectedServerName = option.dataset.serverName;
+                        selected.querySelector('.server-flag').textContent = option.querySelector('.server-flag').textContent;
+                        selected.querySelector('.server-name').textContent = this.selectedServerName;
+                        items.classList.add('select-hide');
+                        this.updateTariffsForServer(this.selectedServer);
+                    });
+                });
+                document.addEventListener('click', (e) => {
+                    if (!container.contains(e.target)) items.classList.add('select-hide');
+                });
+            }
+
+            showPaymentModal() {
+                if (!this.selectedTariffId) {
+                    this.showNotification('Пожалуйста, выберите тариф.', 'error');
+                    return;
+                }
+
+                const selectedCard = document.querySelector(`.tariff-card[data-tariff-id="${this.selectedTariffId}"]`);
+                const days = selectedCard ? parseInt(selectedCard.dataset.days, 10) : 0;
+
+                const today = new Date();
+                const endDate = new Date(today.setDate(today.getDate() + days));
+                
+                const formattedDate = endDate.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                // Update the modal text
+                const subscriptionTextElement = this.dom.paymentModal.querySelector('.subscription-text');
+                if (subscriptionTextElement) {
+                     subscriptionTextElement.innerHTML = `Подписка до: <b>${formattedDate}, ${days} дней</b>`;
+                }
+
+                const price = this.calculatePrice();
+                this.dom.finalPaymentAmount.textContent = `${price}₽`;
+                this.loadUserBalance();
+                this.dom.paymentModal.classList.add('show');
+            }
+
+            hidePaymentModal() { this.dom.paymentModal.classList.remove('show'); }
+
+            async loadUserBalance() {
+                try {
+                    const response = await fetch('/api/user-balance');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    this.userBalance = data.balance;
+                    this.dom.userBalance.textContent = `${this.userBalance.toFixed(2)}₽`;
+                } catch (error) {
+                    console.error('Ошибка при загрузке баланса:', error);
+                    this.dom.userBalance.textContent = 'Ошибка';
+                }
+            }
+
+            async processFinalPayment() {
+                const selectedPaymentMethod = document.querySelector('.payment-option.active').dataset.method;
+                if (selectedPaymentMethod === 'balance') {
+                    await this.processBalancePayment();
+                } else if (selectedPaymentMethod === 'card') {
+                    await this.processCardPayment();
+                } else {
+                    this.showNotification('Способ оплаты не поддерживается', 'error');
+                }
+            }
+            
+            async processBalancePayment() {
+                this.hidePaymentModal();
+                this.showNotification('Обработка платежа...', 'info');
+
+                const price = this.calculatePrice();
+                if (this.userBalance < price) {
+                    this.showNotification('Недостаточно средств на балансе', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/purchase/from_balance', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ tariff_id: this.selectedTariffId })
+                    });
+                    const data = await response.json();
+                    // The backend returns a flat object with success and vless_key on balance payment
+                    if (data.success && data.vless_key) {
+                        this.showSuccessModal(data);
+                    } else {
+                        this.showNotification(data.error || 'Ошибка при обработке платежа', 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('Сетевая ошибка при обработке платежа', 'error');
+                }
+            }
+            
+            async processCardPayment() {
+                this.hidePaymentModal();
+                this.showPaymentWaitingModal();
+                try {
+                    const response = await fetch('/api/purchase/create_yookassa', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ tariff_id: this.selectedTariffId })
+                    });
+                    const result = await response.json();
+                    if (result.success && result.payment_id && result.payment_url) {
+                        this.currentPaymentId = result.payment_id;
+                        window.open(result.payment_url, '_blank');
+                        this.dom.paymentWaitingPayBtn.onclick = () => window.open(result.payment_url, '_blank');
+                        this.startPaymentTracking(result.payment_id);
+                    } else {
+                        this.hidePaymentWaitingModal();
+                        this.showNotification(result.error || 'Ошибка при создании платежа', 'error');
+                    }
+                } catch (error) {
+                    this.hidePaymentWaitingModal();
+                    this.showNotification('Сетевая ошибка при создании платежа', 'error');
+                }
+            }
+            
+            startPaymentTracking(paymentId) {
+                this.stopPaymentTracking(); // Stop any previous trackers
+                this.showPaymentWaitingModal();
+                this.startCountdownTimer(660); // 11 minutes
+
+                setTimeout(() => {
+                    if (this.currentPaymentId === paymentId) {
+                        this.checkPaymentStatus(paymentId); // Check immediately once
+                        this.paymentTrackingInterval = setInterval(() => this.checkPaymentStatus(paymentId), 5000); // Then check every 5s
+                    }
+                }, 3000); // 3-second delay
+            }
+
+            async checkPaymentStatus(paymentId) {
+                if (!this.currentPaymentId) return;
+                try {
+                    const response = await fetch('/api/purchase/get_tracking_status', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ payment_id: paymentId })
+                    });
+                    const statusInfo = await response.json();
+
+                    if (statusInfo.status === 'processed') {
+                        this.stopPaymentTracking();
+                        this.hidePaymentWaitingModal();
+                        // The backend now returns a nested 'result' object for card payments
+                        if (statusInfo.result && statusInfo.result.success) {
+                            this.showSuccessModal(statusInfo.result);
+                        } else {
+                            const errorMessage = statusInfo.result ? statusInfo.result.error : 'Ошибка обработки платежа.';
+                            this.showNotification(errorMessage, 'error');
+                        }
+                    } else if (statusInfo.status === 'not_found') {
+                        this.stopPaymentTracking();
+                        this.hidePaymentWaitingModal();
+                        this.showNotification('Время ожидания оплаты истекло.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error checking payment status:', error);
+                    this.stopPaymentTracking();
+                    this.hidePaymentWaitingModal();
+                    this.showNotification('Ошибка проверки статуса.', 'error');
+                }
+            }
+            
+            startCountdownTimer(totalSeconds) {
+                const timer = () => {
+                    if (totalSeconds <= 0) {
+                        this.stopPaymentTracking();
+                        return;
+                    }
+                    totalSeconds--;
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    this.dom.paymentCountdown.textContent = `Осталось времени: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                };
+                timer(); // Initial call
+                this.countdownInterval = setInterval(timer, 1000);
+            }
+            
+            stopPaymentTracking() {
+                clearInterval(this.paymentTrackingInterval);
+                clearInterval(this.countdownInterval);
+                this.paymentTrackingInterval = null;
+                this.countdownInterval = null;
+                this.currentPaymentId = null;
+            }
+
+            showPaymentWaitingModal() {
+                this.dom.paymentWaitingModal.classList.add('show');
+            }
+
+            hidePaymentWaitingModal() {
+                this.dom.paymentWaitingModal.classList.remove('show');
+                this.stopPaymentTracking();
+            }
+
+            showSuccessModal(paymentResult) {
+                this.hidePaymentModal();
+                this.hidePaymentWaitingModal();
+                this.dom.successVlessKey.textContent = paymentResult.vless_key || 'Ключ будет доступен в личном кабинете';
+                this.dom.paymentSuccessModal.classList.add('show');
+            }
+            
+            hideSuccessModal() {
+                this.dom.paymentSuccessModal.classList.remove('show');
+            }
+            
+            goToProfile() {
+                window.location.href = `{{ url_for('profile') }}`;
+            }
+            
+            copyVlessKey() {
+                const keyElement = this.dom.successVlessKey;
+                if (keyElement && keyElement.textContent) {
+                    navigator.clipboard.writeText(keyElement.textContent)
+                        .then(() => this.showNotification('Ключ скопирован!', 'success'))
+                        .catch(() => this.showNotification('Ошибка копирования', 'error'));
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                if (this.dom.notification) {
+                    this.dom.notification.textContent = message;
+                    this.dom.notification.className = `notification show ${type}`;
+                    setTimeout(() => { this.dom.notification.classList.remove('show'); }, 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

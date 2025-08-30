@@ -1,0 +1,14 @@
+[
+    {
+        "base_url": "https://one.tgone.ru",
+        "directory": "webapp",
+        "port": "40529",
+        "index.html": "/",
+        "profile.html": "/lk",
+        "purchase.html": "/bay",
+        "renewal.html": "/rebay",
+        "installapp.html": "/app",
+        "replace.html": "/rekey", 
+        "support.html": "/sup"
+    }
+]

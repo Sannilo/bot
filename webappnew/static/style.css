@@ -1,0 +1,2004 @@
+/* Базовые стили для Telegram Web App */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #ffffff;
+    --secondary-color: #e0e0e0;
+    --danger-color: #666666;
+    --warning-color: #999999;
+    --bg-color: #000000;
+    --card-bg: #1a1a1a;
+    --text-color: #ffffff;
+    --text-secondary: #888888;
+    --border-color: #333333;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --border-radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    color: var(--text-color); 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+.key-ending {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.server-id {
+    margin-left: auto;
+    background: linear-gradient(135deg, rgba(0, 255, 127, 0.15), rgba(255, 255, 255, 0.1));
+    color: rgba(0, 255, 127, 0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    border: 1px solid rgba(0, 255, 127, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+/* Header */
+.app-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.8s ease-out;
+    position: relative;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    width: 100%;
+}
+
+.header-content .back-btn {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    order: 1;
+}
+
+.header-content .back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+.header-content .back-btn i {
+    font-size: 12px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex: 1;
+    order: 2;
+}
+
+.logo-img {
+    width: 50px;
+    height: 50px;
+    filter: brightness(0) invert(1);
+}
+
+.logo h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(45deg, #ffffff, #cccccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-actions {
+    flex: 0 0 auto;
+    order: 3;
+}
+
+.header-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.header-btn:hover {
+    color: #cccccc;
+    transform: scale(1.1);
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Дублирующаяся анимация fadeInUp удалена - используется основная анимация выше */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Container */
+.container {
+    max-width: 400px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    margin: 0 auto;
+    padding: 15px;
+    width: 100%;
+}
+
+/* Main */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column; 
+    max-width: 400px;
+    margin: 0 auto; 
+    width: 100%;
+}
+
+/* Subscription Card */
+.subscription-card {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+
+
+.subscription-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    border-color: #444;
+}
+
+.subscription-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.status-indicator {
+    position: relative;
+    margin-right: 12px;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+}
+
+.status-indicator.active .status-dot {
+    background: #00ff88;
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+    animation: pulse-active 2s ease-in-out infinite;
+}
+
+.status-indicator.expired .status-dot {
+    background: #666666;
+    box-shadow: 0 0 8px rgba(102, 102, 102, 0.6);
+    animation: pulse-expired 3s ease-in-out infinite;
+}
+
+.status-indicator.inactive .status-dot {
+    background: #888888;
+    box-shadow: 0 0 8px rgba(136, 136, 136, 0.6);
+    animation: pulse-inactive 4s ease-in-out infinite;
+}
+
+.pulse-ring {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    border: 1px solid;
+    border-radius: 50%;
+    animation: pulse 2s ease-out infinite;
+}
+
+.status-indicator.active .pulse-ring {
+    border-color: #00ff88;
+}
+
+.status-indicator.expired .pulse-ring {
+    border-color: #666666;
+}
+
+.status-indicator.inactive .pulse-ring {
+    border-color: #888888;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+.subscription-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.status-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    line-height: 1.2;
+}
+
+.server-location {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.85;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.server-location i {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.expiry-info {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.expiry-date {
+    display: block;
+    font-size: 13px;
+    opacity: 0.9;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.days-left {
+    display: block;
+    font-size: 11px;
+    opacity: 0.75;
+    font-weight: 400;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 6px;
+    border-radius: 8px;
+    margin-top: 2px;
+    text-align: center;
+}
+
+/* Progress Bar */
+.subscription-progress {
+    margin-top: 1rem;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.progress-bar {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00cc6a);
+    border-radius: 8px;
+    transition: width 0.8s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes shimmer {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes pulse-active {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(0, 255, 136, 0.9);
+        transform: scale(1.1);
+    }
+}
+
+@keyframes pulse-expired {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(102, 102, 102, 0.6);
+        opacity: 0.7;
+    }
+    50% {
+        box-shadow: 0 0 12px rgba(102, 102, 102, 0.8);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-inactive {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(136, 136, 136, 0.6);
+        opacity: 0.5;
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(136, 136, 136, 0.7);
+        opacity: 0.8;
+    }
+}
+
+/* Buttons */
+.btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.3px;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+/* Убрана анимация при наведении для btn-primary */
+
+.btn i {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+}
+
+
+.btn-primary {
+    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    color: #0a0a0a;
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    /* Убрана анимация при наведении */
+}
+
+
+.btn-secondary {
+    background: transparent;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+}
+
+.btn-secondary:hover {
+    background: #ffffff;
+    color: #0a0a0a;
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.15);
+}
+
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeInUp 0.8s ease-out 0.7s both;
+    margin-top: 25px;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    display: flex;
+    gap: 15px;
+    animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.nav-btn {
+    flex: 1;
+    padding: 20px 15px;
+    background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+    border: 1px solid #333;
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.nav-btn:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    border-color: #555;
+}
+
+
+.nav-btn i {
+    font-size: 24px;
+    transition: transform 0.3s ease;
+}
+
+/* Footer */
+.app-footer {
+    text-align: center;
+    margin-top: 40px;
+    color: #666;
+    font-size: 12px;
+    animation: fadeIn 0.8s ease-out 0.8s both;
+}
+
+.footer-content {
+    color: #666;
+    font-size: 12px;
+}
+
+.footer-links {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.footer-links a {
+    color: #666;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.footer-links a:hover {
+    color: var(--primary-color);
+}
+
+/* Responsive - Оптимизировано для Telegram Web App */
+ 
+    
+    /* Дублирующиеся стили .server-location, .expiry-date, .days-left, .expiry-info удалены - используются основные стили выше */
+    
+    /* Дублирующиеся стили .progress-info, .btn, .nav-buttons, .nav-btn удалены - используются основные стили выше */
+    
+    /* Дублирующиеся стили .app-footer, .footer-content, .footer-links удалены - используются основные стили выше */ 
+
+/* Дублирующиеся анимации удалены - используются основные анимации выше */
+
+
+
+/* Main Content */
+
+
+/* Profile Styles */
+.profile-section {
+    margin-bottom: 25px;
+    animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.profile-section h2 {
+    color: #ffffff;
+    font-size: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* Старые стили .profile-card удалены - используются объединенные стили ниже */
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Дублирующиеся стили .info-item удалены - используются основные стили выше */
+
+/* Дублирующиеся стили .info-item .value удалены - используются основные стили выше */
+
+/* Специальные стили для элементов профиля */
+#user-balance,
+#registration-date,
+#total-keys {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.1px !important;
+}
+
+/* Дублирующиеся стили #user-id удалены - используются основные стили выше */
+
+/* Дублирующиеся стили .keys-section удалены - используются основные стили выше */
+
+.keys-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Старые стили .key-card удалены - используются объединенные стили ниже */
+
+.key-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.country-flag {
+    font-size: 20px;
+    margin-right: 8px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.country-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    flex: 1;
+    letter-spacing: 0.3px;
+}
+
+.key-status {
+    text-align: right;
+}
+
+/* Дублирующиеся стили .time-left удалены - используются основные стили выше */
+
+.key-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.key-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.key-text {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #00ff88;
+    word-break: break-all;
+    line-height: 1.3;
+    opacity: 0.9;
+}
+
+.key-highlight {
+    color: #FFC107;
+    font-weight: 600;
+}
+
+.key-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* Дублирующиеся стили .btn-key удалены - используются новые стили ниже */
+
+.btn-key.success {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+/* Стили для .copy-btn и .connect-btn перенесены ниже - используются стили из старого приложения */
+
+/* Show All Button */
+.show-all-btn {
+    width: 100%;
+    padding: 10px 16px;
+    margin-top: 12px;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(5px);
+}
+
+.show-all-btn:hover {
+    background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.show-all-btn i {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* No Keys Message */
+.no-keys-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.no-keys-message p {
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.purchase-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-color);
+    color: #0a0a0a;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.purchase-link:hover {
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* Back Button */
+.back-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive Design for Profile */
+
+
+/* Ripple эффект */
+.btn,
+.nav-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Payment Waiting Modal Styles */
+.pay-waiting-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.pay-waiting-modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.pay-waiting-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.pay-waiting-modal-content {
+    background-color: var(--bg-color);
+    margin: 15% auto;
+    padding: 30px;
+    border: none;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.pay-waiting-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.pay-waiting-modal-close:hover {
+    color: #fff;
+}
+
+.pay-waiting-content {
+    text-align: center;
+    color: #fff;
+}
+
+.pay-waiting-spinner {
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: pay-spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes pay-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.pay-waiting-text {
+    color: var(--text-color);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.pay-waiting-info {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+    border-left: 4px solid var(--primary-color);
+}
+
+.pay-waiting-info p {
+    color: var(--text-secondary);
+    margin: 0 0 15px 0;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.pay-waiting-info p:last-child {
+    margin-bottom: 0;
+}
+
+.pay-waiting-info .highlight {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.pay-waiting-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    justify-content: center;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pay-waiting-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 100px;
+}
+
+.pay-waiting-btn.pay {
+    background-color: var(--primary-color);
+    color: #0a0a0a;
+}
+
+.pay-waiting-btn.pay:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.pay-waiting-btn.cancel {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+}
+
+.pay-waiting-btn.cancel:hover {
+    background-color: var(--border-color);
+    transform: translateY(-2px);
+}
+
+/* Дублирующаяся анимация shimmer удалена - используется основная анимация выше */
+
+/* Profile Page Styles - Оптимизировано для Telegram Web App */
+.back-circle {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.back-circle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.back-icon {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Дублирующиеся стили .profile-section удалены - используются основные стили выше */
+
+/* Единые стили для карточек (без дублирования) */
+.profile-card,
+.key-card {
+    background: linear-gradient(135deg, #1e1e1e 0%, #141414 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.profile-card:hover,
+.key-card:hover {
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Дублирующиеся стили .profile-info удалены - используются основные стили выше */
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: border-color 0.3s ease;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item .label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.info-item .value {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+#user-id {
+    font-family: 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #00ff88;
+    letter-spacing: 0.5px;
+}
+
+/* Keys Section */
+.keys-section {
+    margin: 25px 0;
+    animation: fadeInUp 0.8s ease-out 0.5s both;
+}
+
+.keys-section h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #ffffff;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* Дублирующиеся стили .key-header, .country-flag, .country-name, .key-status удалены - используются основные стили выше */
+
+.key-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-left {
+    font-size: 12px;
+    color: #ffaa00;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(255, 170, 0, 0.15), rgba(255, 170, 0, 0.08));
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 170, 0, 0.25);
+    backdrop-filter: blur(4px);
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+}
+
+/* Дублирующиеся стили .key-actions удалены - используются основные стили выше */
+
+/* Универсальные стили для кнопок ключей */
+.btn-key {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(8px);
+}
+
+.btn-key i {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+/* Стили для кнопок как в старом приложении */
+.copy-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex: 0.1;
+    min-width: 32px;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.copy-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.connect-btn {
+    background: linear-gradient(135deg, #00ff88, #00cc6a);
+    color: #0a0a0a;
+    font-weight: 700;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.connect-btn:hover {
+    background: linear-gradient(135deg, #00ff99, #00dd7b);
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.25);
+    border-color: rgba(0, 255, 136, 0.5);
+}
+
+.show-all-btn:hover {
+    background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.show-all-btn i {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Дублирующиеся стили .no-keys-message, .purchase-link удалены - используются основные стили выше */
+
+.purchase-link:hover {
+    box-shadow: 0 8px 25px rgba(0, 255, 136, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Стили для страницы покупки подписки */
+
+/* Purchase page styles */
+.purchase-header {
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeInDown 0.6s ease;
+}
+
+.purchase-header h2 {
+    color: var(--text-color);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.purchase-header p {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+/* Server selector styles */
+.server-selector {
+    margin-bottom: 25px;
+    animation: fadeIn 0.6s ease 0.2s both;
+}
+
+.server-selector {
+    position: relative;
+    z-index: 2;
+}
+
+.server-selector label {
+    display: block;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.custom-select {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px 12px 0px 0px;
+    overflow: visible;
+    z-index: 10000 !important;
+}
+
+.select-selected {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 12px 12px 0px 0px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+}
+
+.select-selected:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.server-flag {
+    font-size: 20px;
+    margin-right: 12px;
+}
+
+.server-name {
+    flex: 1;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.select-arrow {
+    color: var(--text-secondary);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    font-size: 12px;
+}
+
+.select-arrow-active .select-arrow {
+    transform: rotate(180deg);
+}
+
+.select-items {
+    position: absolute;
+    top: 103%;
+    left: -1px;
+    right: -1px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    z-index: 9999 !important;
+    max-height: 200px;
+    overflow-y: auto;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    visibility: visible;
+}
+
+/* Специальные z-index для разных dropdown'ов */
+#current-key-options {
+    z-index: 10000 !important;
+}
+
+#new-server-options {
+    z-index: 9998 !important;
+}
+
+/* Базовые селекторы */
+.custom-select {
+    position: relative;
+    z-index: 1;
+}
+
+/* Контейнеры селекторов с разными z-index */
+.server-selector:first-of-type {
+    position: relative;
+    z-index: 1000;
+}
+
+.server-selector:nth-of-type(2) {
+    position: relative;
+    z-index: 100;
+}
+
+#current-key-select-container {
+    position: relative;
+    z-index: 1001;
+}
+
+#new-server-select-container {
+    position: relative;
+    z-index: 101;
+}
+
+.select-hide {
+    opacity: 0 !important;
+    transform: translateY(-10px) !important;
+    pointer-events: none !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+}
+
+.select-show {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    visibility: visible !important;
+}
+
+.select-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.select-item:last-child {
+    border-bottom: none;
+}
+
+.select-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Tariff grid styles - мобильная версия */
+.tariff-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 25px;
+    animation: fadeIn 0.6s ease 0.4s both;
+    position: relative;
+    z-index: 1;
+}
+
+.tariff-card {
+    position: relative;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.tariff-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.tariff-card.selected {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), var(--card-bg));
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+}
+
+.tariff-duration {
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.tariff-price {
+    color: var(--primary-color);
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.popular-badge {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    /*background: rgba(255, 255, 255, 0.15);*/
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 2px 8px;
+    border-radius: 0 12px 0 8px;
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tariff-savings {
+    color: #00cc6a;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 5px;
+}
+
+/* Selection summary styles */
+.selection-summary {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    animation: fadeIn 0.6s ease 0.6s both;
+}
+
+.selected-info {
+    display: flex;
+    gap: 8px;
+    text-align: center;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-weight: 500;
+    justify-content: space-between;
+}
+
+.payment-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary-color), #cccccc);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.payment-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+}
+
+.payment-btn:active {
+    transform: translateY(0);
+}
+
+/* Payment Modal Styles */
+.modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    padding: 0px 5px 0px 5px;
+}
+
+.modal-content {
+    background: linear-gradient(145deg, var(--card-bg), #0f0f0f);
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    animation: modalSlideUp 0.3s ease;
+    margin-bottom: 0;
+    box-shadow: var(--shadow);
+}
+
+.modal h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 22px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.subscription-details {
+    background: linear-gradient(135deg, #222, var(--card-bg));
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.subscription-text {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.subscription-text b {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.payment-methods {
+    margin-bottom: 25px;
+}
+
+.payment-methods h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    text-align: center;
+}
+
+.payment-slider {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.payment-option {
+    flex: 1;
+    padding: 15px 10px;
+    background: linear-gradient(145deg, #222, var(--card-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.payment-option:hover {
+    transform: translateY(-2px);
+    border-color: #555;
+}
+
+.payment-option.active {
+    background: linear-gradient(145deg, #0f2a1a, #0a1f0f);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+.payment-option i {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.payment-option.active i {
+    color: var(--primary-color);
+}
+
+.balance-info {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--card-bg), #2a2a2a);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.balance-text {
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.balance-text span {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.promo-section {
+    margin-bottom: 25px;
+}
+
+.promo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.promo-text {
+    color: var(--text-color);
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+    flex: 1;
+}
+
+.promo-add-btn {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--bg-color);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+    opacity: 0.9;
+}
+
+.promo-add-btn:hover {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+    opacity: 1;
+    border-color: var(--primary-color);
+}
+
+.promo-add-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+}
+
+.promo-input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.promo-input-container input {
+    flex: 1;
+    padding: 12px 15px;
+    background: #222;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.promo-input-container input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.promo-input-container button {
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #333, #555);
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.promo-input-container button:hover {
+    background: linear-gradient(135deg, #555, #777);
+    border-color: #777;
+}
+
+.final-payment-button {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary-color), #e0e0e0);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+}
+
+.final-payment-button:hover {
+    background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+}
+
+.final-payment-button:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    color: #aaa;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    z-index: 1001;
+}
+
+.close-modal:hover {
+    color: var(--text-color);
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Subscription Display Styles */
+.subscription-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+}
+
+.subscription-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.subscription-key {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'Courier New', monospace;
+}
+
+.subscription-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.subscription-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.subscription-option:last-child {
+    border-bottom: none;
+}
+
+.subscription-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.subscription-server {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.subscription-info-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.subscription-key-display {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+/* Telegram Web App - мобильная версия по умолчанию */
+
+/* Кнопка копирования ключа */
+.copy-key-btn {
+    margin-left: 8px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.copy-key-btn:hover {
+    background: #45a049;
+    transform: scale(1.1);
+}
+
+.copy-key-btn:active {
+    transform: scale(0.9);
+}
+
+/* === New Modal Styles === */
+
+/* General modal content adjustments */
+.pay-waiting-modal-content {
+    padding: 24px; /* A bit less padding */
+    border-radius: 20px; /* Rounded corners */
+    max-width: 360px; /* More compact */
+    border: 1px solid var(--border-color);
+}
+
+/* Success Icon Animation */
+/* Target success modals specifically */
+#payment-success-modal .pay-waiting-spinner,
+#newKeyModal .pay-waiting-spinner {
+    background-color: #4CAF50;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-success 1.5s ease-in-out infinite;
+}
+
+#payment-success-modal .pay-waiting-spinner div,
+#newKeyModal .pay-waiting-spinner div {
+    font-size: 28px;
+    font-weight: bold;
+    padding: 0;
+    color: white;
+} 
+@keyframes pulse-success {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 10px 15px rgba(76, 175, 80, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* Key Display Area */
+.key-display-container {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+    border: 1px solid var(--border-color);
+}
+
+/* Key text display class */
+.key-text-display {
+    word-break: break-all;
+    font-family: monospace;
+    color: #00ff88; /* Match profile key color */
+    font-size: 13px;
+    display: block;
+    padding-right: 30px; /* Make space for the button */
+}
+
+/* New Copy Button Style */
+.copy-key-btn-modal {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    transition: color 0.3s ease;
+}
+
+.copy-key-btn-modal:hover {
+    color: #fff;
+}
+
+/* Info box adjustments */
+.pay-waiting-info {
+    padding: 15px; /* Adjust padding */
+    margin: 20px 0;
+    border-left-width: 0; /* Remove left border */
+    background-color: var(--card-bg); /* Use card background */
+    border: 1px solid var(--border-color); /* Add a full border */
+    border-radius: 12px; /* Make it rounded */
+}
+
+/* Adjust text inside the info box */
+.pay-waiting-info p {
+    font-size: 13px; /* Slightly larger font */
+    line-height: 1.6;
+}
+
+/* Adjust main text */
+.pay-waiting-text {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+/* Adjust action buttons container */
+.pay-waiting-actions {
+    margin-top: 20px;
+}
+ 

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN WebApp - Профиль</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        {% include 'header.html' %}
+
+        <main>
+            <div class="profile-section">
+                <h2 class="section-title">Ваш профиль</h2>
+                <div class="profile-card">
+                    <div class="profile-info">
+                        <div class="info-item">
+                            <span class="label">ID пользователя:</span>
+                            <span class="value" id="user-id">{{ user_id }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Баланс:</span>
+                            <span class="value" id="user-balance">0₽</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Дата регистрации:</span>
+                            <span class="value" id="registration-date">Загрузка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Количество ключей:</span>
+                            <span class="value" id="total-keys">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="keys-section">
+                <h3 class="section-title">Ваши ключи</h3>
+                <div class="keys-container" id="keys-container">
+                    </div>
+                <div class="no-keys-message" id="no-keys-message" style="display: none;">
+                    <p>У вас пока нет активных подписок</p>
+                    <a href="{{ url_for('purchase') }}" class="purchase-link">
+                        <i class="fas fa-plus"></i> Купить подписку
+                    </a>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.location.href='{{ url_for('purchase') }}'">
+                    <i class="fas fa-plus"></i>
+                    Добавить ключ
+                </button>
+            </div>
+        </main>
+
+        {% include 'footer.html' %}
+    </div>
+
+    <div class="notification" id="notification" style="display: none;"></div>
+
+    <script>
+        // Profile page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load user profile information
+            loadUserProfile();
+
+            // Load user subscriptions
+            loadUserSubscriptions();
+
+            // Initialize key management
+            initializeKeyManagement();
+        });
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(`/api/user-profile`);
+                const data = await response.json();
+
+                if (data.profile) {
+                    updateProfileInfo(data.profile);
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function updateProfileInfo(profile) {
+            // Обновляем баланс
+            const balanceElement = document.getElementById('user-balance');
+            if (balanceElement && profile.balance !== undefined) {
+                balanceElement.textContent = `${profile.balance.toFixed(2)}₽`;
+            }
+
+            // Обновляем дату регистрации
+            const registrationElement = document.getElementById('registration-date');
+            if (registrationElement && profile.registration_date) {
+                const daysText = profile.days_since_registration > 0 ? ` (${profile.days_since_registration} дн.)` : '';
+                registrationElement.textContent = `${profile.registration_date}${daysText}`;
+            }
+
+            // Обновляем количество ключей
+            const keysElement = document.getElementById('total-keys');
+            if (keysElement && profile.total_keys !== undefined) {
+                keysElement.textContent = profile.total_keys;
+            }
+        }
+
+        async function loadUserSubscriptions() {
+            try {
+                const response = await fetch(`/api/user-subscriptions`);
+                const data = await response.json();
+
+                if (data.subscriptions && data.subscriptions.length > 0) {
+                    displaySubscriptions(data.subscriptions);
+                } else {
+                    displayNoSubscriptions();
+                }
+            } catch (error) {
+                console.error('Error loading subscriptions:', error);
+                displayNoSubscriptions();
+            }
+        }
+
+        function displaySubscriptions(subscriptions) {
+            const keysContainer = document.getElementById('keys-container');
+            const noKeysMessage = document.getElementById('no-keys-message');
+
+            // Очищаем контейнер
+            keysContainer.innerHTML = '';
+            noKeysMessage.style.display = 'none';
+
+            if (subscriptions.length > 0) {
+                // Показываем только первый ключ
+                const firstKeyCard = createKeyCard(subscriptions[0]);
+                keysContainer.appendChild(firstKeyCard);
+
+                // Создаем скрытые ключи
+                for (let i = 1; i < subscriptions.length; i++) {
+                    const keyCard = createKeyCard(subscriptions[i]);
+                    keyCard.style.display = 'none';
+                    keyCard.classList.add('hidden-key');
+                    keysContainer.appendChild(keyCard);
+                }
+
+                // Добавляем кнопку "Показать все" если есть скрытые ключи
+                if (subscriptions.length > 1) {
+                    const showAllBtn = document.createElement('button');
+                    showAllBtn.className = 'show-all-btn';
+                    showAllBtn.innerHTML = '<i class="fas fa-eye"></i> Показать все ключи';
+                    showAllBtn.onclick = function() {
+                        toggleAllKeys(this);
+                    };
+                    keysContainer.appendChild(showAllBtn);
+                }
+            }
+        }
+
+        function createKeyCard(subscription) {
+            const keyCard = document.createElement('div');
+            keyCard.className = 'key-card';
+
+            // === НОВАЯ ЛОГИКА ОТОБРАЖЕНИЯ ВРЕМЕНИ ===
+            let timeLeft = '';
+            if (subscription.status === 'expired') {
+                timeLeft = 'Истекла';
+            } else {
+                const days = subscription.days_left || 0;
+                const hours = subscription.hours_left || 0;
+                const minutes = subscription.minutes_left || 0;
+                const seconds = subscription.seconds_left || 0;
+
+                if (days > 0) {
+                    timeLeft = `${days}д ${hours}ч ${minutes}м`;
+                } else if (hours > 0) {
+                    timeLeft = `${hours}ч ${minutes}м ${seconds}с`;
+                } else if (minutes > 0) {
+                    timeLeft = `${minutes}м ${seconds}с`;
+                } else if (seconds > 0) {
+                    timeLeft = `${seconds}с`;
+                } else {
+                    timeLeft = 'Истекла'; // На случай, если ключ активен, но время 0
+                }
+            }
+            // === КОНЕЦ НОВОЙ ЛОГИКИ ===
+
+            // Обрезаем ключ для отображения
+            let displayKey;
+            if (subscription.vless.length > 40) {
+                displayKey = subscription.vless.substring(0, 20) + '...' + subscription.vless.substring(subscription.vless.length - 20);
+            } else {
+                displayKey = subscription.vless;
+            }
+
+            // Выделяем часть после '@' желтым цветом
+            const atIndex = displayKey.indexOf('@');
+            if (atIndex !== -1) {
+                const beforeAt = displayKey.substring(0, atIndex);
+                const afterAt = displayKey.substring(atIndex);
+                displayKey = beforeAt + '<span class="key-highlight">' + afterAt + '</span>';
+            }
+
+            keyCard.innerHTML = `
+                <div class="key-header">
+                    <span class="country-name">${subscription.server_name}</span>
+                    <div class="key-status ${subscription.status}">
+                        <span class="time-left">${timeLeft}</span>
+                    </div>
+                </div>
+                <div class="key-content">
+                    <div class="key-value">
+                        <span class="key-text"></span>
+                        <button class="btn-key copy-btn" data-key="${subscription.vless}">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="key-actions">
+                        <button class="btn-key connect-btn">
+                            <i class="fas fa-link"></i>
+                            Подключить
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Устанавливаем HTML-содержимое для ключа с цветовым выделением
+            const keyTextElement = keyCard.querySelector('.key-text');
+            keyTextElement.innerHTML = displayKey;
+
+            return keyCard;
+        }
+
+        function displayNoSubscriptions() {
+            const keysContainer = document.getElementById('keys-container');
+            const noKeysMessage = document.getElementById('no-keys-message');
+
+            keysContainer.innerHTML = '';
+            noKeysMessage.style.display = 'block';
+        }
+
+        function toggleAllKeys(button) {
+            const hiddenKeys = document.querySelectorAll('.hidden-key');
+            const isShowing = button.textContent.includes('Скрыть');
+
+            hiddenKeys.forEach(key => {
+                if (isShowing) {
+                    key.style.display = 'none';
+                } else {
+                    key.style.display = 'block';
+                }
+            });
+
+            if (isShowing) {
+                button.innerHTML = '<i class="fas fa-eye"></i> Показать все ключи';
+            } else {
+                button.innerHTML = '<i class="fas fa-eye-slash"></i> Скрыть ключи';
+            }
+        }
+
+        function initializeKeyManagement() {
+            // Copy key functionality with event delegation
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.copy-btn')) {
+                    const copyBtn = event.target.closest('.copy-btn');
+                    const key = copyBtn.getAttribute('data-key');
+
+                    navigator.clipboard.writeText(key).then(() => {
+                        showMessage('Ключ скопирован в буфер обмена');
+
+                        // Визуальная обратная связь
+                        const originalHTML = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        copyBtn.classList.add('success');
+
+                        setTimeout(() => {
+                            copyBtn.innerHTML = originalHTML;
+                            copyBtn.classList.remove('success');
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Ошибка копирования:', err);
+                        showMessage('Ошибка при копировании ключа');
+                    });
+                }
+            });
+
+            // Connect button functionality with event delegation
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.connect-btn')) {
+                    showMessage('Функция автоподключения в разработке');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

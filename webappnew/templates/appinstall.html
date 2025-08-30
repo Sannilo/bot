@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Установка и настройка VPN</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        {% include 'header.html' %}
+
+        <main>
+            <!-- Блок с ключом доступа -->
+            {% if install_data.has_subscription and install_data.vless_link %}
+            <div class="subscription-card">
+                <div class="subscription-header">
+                    <div class="status-indicator active">
+                        <div class="status-dot"></div>
+                        <div class="pulse-ring"></div>
+                    </div>
+                    <div class="subscription-info">
+                        <h3 class="status-title">Ваш ключ доступа</h3>
+                        <p class="server-location">
+                            <i class="fas fa-key"></i>
+                            Готов к использованию
+                        </p>
+                        
+                        <!-- Выбор ключей пользователя -->
+                        {% if install_data.user_keys and install_data.user_keys|length > 1 %}
+                        <div class="server-selector">
+                            <label for="key-select">Выберите ключ:</label>
+                            <div class="custom-select" id="key-select-container">
+                                <div class="select-selected" id="key-selected">
+                                    <span class="subscription-info">
+                                        {% if install_data.user_keys %}
+                                            {{ install_data.user_keys[0].server_name }} | {% if install_data.user_keys[0].days_left > 0 %}{{ install_data.user_keys[0].days_left }}д {{ install_data.user_keys[0].hours_left }}ч{% else %}{{ install_data.user_keys[0].hours_left }}ч{% endif %} | <span class="server-id">@{{ install_data.user_keys[0].key_ending }}</span>
+                                        {% else %}
+                                            Выберите ключ
+                                        {% endif %}
+                                    </span>
+                                    <span class="select-arrow">▼</span>
+                                </div>
+                                <div class="select-items select-hide" id="key-options">
+                                    {% for key in install_data.user_keys %}
+                                    <div class="select-item" data-vless="{{ key.vless }}">
+                                        <span class="subscription-info">{{ key.server_name }} | {% if key.days_left > 0 %}{{ key.days_left }}д {{ key.hours_left }}ч{% else %}{{ key.hours_left }}ч{% endif %}</span>
+                                        <span class="server-id">@{{ key.key_ending }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="key-container">
+                    <div class="key-display">
+                        <code class="vless-key">{% if install_data.user_keys and install_data.user_keys|length > 0 %}{{ install_data.user_keys[0].vless }}{% else %}{{ install_data.vless_link }}{% endif %}</code>
+                        <div class="key-actions">
+                            <button class="copy-btn" onclick="copyKey()" title="Копировать ключ">
+                                <i class="fas fa-copy"></i>
+                                <span class="btn-text">Copy</span>
+                            </button>
+                            <button class="qr-btn" onclick="generateQR()" title="Показать QR-код">
+                                <i class="fas fa-qrcode"></i>
+                                <span class="btn-text">QR</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="subscription-card">
+                <div class="subscription-header">
+                    <div class="status-indicator inactive">
+                        <div class="status-dot"></div>
+                        <div class="pulse-ring"></div>
+                    </div>
+                    <div class="subscription-info">
+                        <h3 class="status-title">Нет активной подписки</h3>
+                        <p class="server-location">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Приобретите подписку для получения ключа
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Секция выбора устройства -->
+            <div class="device-selection">
+                <h2 class="section-title">
+                    <i class="fas fa-mobile-alt"></i>
+                    Выберите ваше устройство
+                </h2>
+                
+                <div class="device-buttons">
+                    <button class="device-btn" data-device="ios" onclick="selectDevice('ios')">
+                        <i class="fab fa-apple"></i>
+                        <span>iPhone / iPad</span>
+                    </button>
+                    <button class="device-btn" data-device="android" onclick="selectDevice('android')">
+                        <i class="fab fa-android"></i>
+                        <span>Android</span>
+                    </button>
+                    <button class="device-btn" data-device="windows" onclick="selectDevice('windows')">
+                        <i class="fab fa-windows"></i>
+                        <span>Windows</span>
+                    </button>
+                    <button class="device-btn" data-device="androidtv" onclick="selectDevice('androidtv')">
+                        <i class="fas fa-tv"></i>
+                        <span>Android TV</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список приложений -->
+            <div class="apps-section" id="apps-section" style="display: none;">
+                <h2 class="section-title">
+                    <i class="fas fa-download"></i>
+                    Установка для <span id="selected-device-name"></span>
+                </h2>
+                
+                {% for app in install_data.apps %}
+                <div class="app-card" data-device="{{ loop.index0 }}">
+                    <div class="app-header">
+                        <div class="app-icon">
+                            <i class="{{ app.icon }}"></i>
+                        </div>
+                        <div class="app-info">
+                            <h3 class="app-name">{{ app.name }}</h3>
+                        </div>
+                        <div class="app-actions">
+                            <a href="{{ app.download_url }}" target="_blank" class="btn btn-download">
+                                <i class="fas fa-download"></i>
+                                Скачать
+                            </a>
+                            {% if app.connect_url and install_data.has_subscription %}
+                            <a href="{{ app.connect_url }}" target="_blank" class="btn btn-connect">
+                                <i class="fas fa-link"></i>
+                                Подключить
+                            </a>
+                            {% endif %}
+                            {% if loop.index0 == 2 and install_data.has_subscription %}
+                            <button class="btn btn-qr" onclick="generateAppQR()" title="Показать QR-код для Android TV">
+                                <i class="fas fa-qrcode"></i>
+                                QR-код
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="app-instructions">
+                        <h4 class="instructions-title">
+                            <i class="fas fa-list-ol"></i>
+                            Инструкция по установке:
+                        </h4>
+                        <ol class="instructions-list">
+                            {% for instruction in app.instructions %}
+                            <li>{{ instruction }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Дополнительная информация -->
+            <div class="info-card">
+                <div class="info-header">
+                    <i class="fas fa-lightbulb"></i>
+                    <h3>Советы</h3>
+                </div>
+                <div class="info-content">
+                    <ul class="info-list">
+                        <li>
+                            <i class="fas fa-shield-alt"></i>
+                            Используйте только официальные приложения
+                        </li>
+                        <li>
+                            <i class="fas fa-eye-slash"></i>
+                            Не передавайте ваш ключ доступа третьим лицам
+                        </li>
+                        <li>
+                            <i class="fas fa-sync-alt"></i>
+                            При проблемах с подключением попробуйте перезапустить приложение
+                        </li>
+                        <li>
+                            <i class="fas fa-headset"></i>
+                            Обратитесь в поддержку при возникновении проблем
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Кнопка назад -->
+            <div class="navigation">
+                <a href="{{ url_for('index') }}" class="btn btn-back">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад к профилю
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно для QR-кода -->
+    <div id="qrModal" class="qr-modal">
+        <div class="qr-modal-content">
+            <div class="qr-header">
+                <h3>QR-код для подключения</h3>
+                <button class="qr-close" onclick="closeQR()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="qr-body">
+                <img id="qrCode" alt="QR-код" class="qr-image">
+                <p class="qr-description">Отсканируйте QR-код в приложении для быстрого подключения</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function changeSelectedKey(selectedKey) {
+            const keyElement = document.querySelector('.vless-key');
+            
+            if (keyElement) {
+                keyElement.textContent = selectedKey;
+                highlightKeyPart(); // Применяем выделение желтым цветом
+                
+                // Обновляем ссылки в кнопках "Подключить"
+                const connectButtons = document.querySelectorAll('.btn-connect');
+                
+                connectButtons.forEach((button) => {
+                    const currentHref = button.getAttribute('href');
+                    
+                    if (currentHref && currentHref.includes('vless=')) {
+                        let newHref = currentHref;
+                        
+                        // Проверяем, какой формат используется в URL
+                        if (currentHref.includes('vless=vless%3A')) {
+                            // Для URL-кодированного формата (iOS/Android)
+                            const encodedKey = encodeURIComponent(selectedKey);
+                            newHref = currentHref.replace(/vless=vless%3A[^&]*/, `vless=${encodedKey}`);
+                        } else if (currentHref.includes('vless=vless:')) {
+                            // Для некодированного формата (Windows)
+                            newHref = currentHref.replace(/vless=vless:[^&]*/, `vless=${selectedKey}`);
+                        } else {
+                            // Общий случай - заменяем любое значение после vless=
+                            newHref = currentHref.replace(/vless=[^&]*/, `vless=${encodeURIComponent(selectedKey)}`);
+                        }
+                        
+                        button.setAttribute('href', newHref);
+                    }
+                });
+            }
+        }
+         
+        document.addEventListener('DOMContentLoaded', function() {
+            highlightKeyPart();
+            
+            const keySelectContainer = document.getElementById('key-select-container');
+            if (keySelectContainer) {
+                const selected = keySelectContainer.querySelector('.select-selected');
+                const optionsContainer = keySelectContainer.querySelector('.select-items');
+                const options = keySelectContainer.querySelectorAll('.select-item');
+
+                selected.addEventListener('click', () => {
+                    optionsContainer.classList.toggle('select-hide');
+                });
+
+                options.forEach(option => {
+                    option.addEventListener('click', () => {
+                        const selectedSubscriptionInfo = option.querySelector('.subscription-info').innerHTML;
+                        const selectedServerId = option.querySelector('.server-id').outerHTML; // Get outerHTML to include the span itself
+                        
+                        selected.querySelector('.subscription-info').innerHTML = selectedSubscriptionInfo + ' ' + selectedServerId;
+                        optionsContainer.classList.add('select-hide');
+                        
+                        const vlessKey = option.getAttribute('data-vless');
+                        changeSelectedKey(vlessKey);
+                    });
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!keySelectContainer.contains(e.target)) {
+                        optionsContainer.classList.add('select-hide');
+                    }
+                });
+
+                // Auto-select first key
+                if (options.length > 0) {
+                    const firstKeyVless = options[0].getAttribute('data-vless');
+                    changeSelectedKey(firstKeyVless);
+                }
+            }
+
+            const cards = document.querySelectorAll('.app-card, .info-card, .device-selection');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${0.1 * (index + 1)}s`;
+                card.classList.add('fade-in-up');
+            });
+        });
+
+        function copyKey() {
+            const keyElement = document.querySelector('.vless-key');
+            const copyBtn = document.querySelector('.copy-btn');
+            
+            if (keyElement) {
+                navigator.clipboard.writeText(keyElement.textContent).then(() => {
+                    const originalContent = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i><span class="btn-text">Скопировано</span>';
+                    copyBtn.style.color = '#00ff88';
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalContent;
+                        copyBtn.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Ошибка копирования: ', err);
+                });
+            }
+        }
+
+        function generateQR() {
+            const keyElement = document.querySelector('.vless-key');
+            if (!keyElement) return;
+            
+            const vlessKey = keyElement.textContent;
+            const qrModal = document.getElementById('qrModal');
+            const qrCode = document.getElementById('qrCode');
+            
+            // Генерируем QR-код через API
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vlessKey)}`;
+            qrCode.src = qrUrl;
+            
+            qrModal.style.display = 'flex';
+        }
+
+        function closeQR() {
+            const qrModal = document.getElementById('qrModal');
+            qrModal.style.display = 'none';
+        }
+
+        function generateAppQR() {
+            const keyElement = document.querySelector('.vless-key');
+            if (!keyElement) return;
+            
+            const vlessKey = keyElement.textContent;
+            const qrModal = document.getElementById('qrModal');
+            const qrCode = document.getElementById('qrCode');
+            
+            // Генерируем QR-код через API
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vlessKey)}`;
+            qrCode.src = qrUrl;
+            
+            qrModal.style.display = 'flex';
+        }
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const qrModal = document.getElementById('qrModal');
+            if (event.target === qrModal) {
+                closeQR();
+            }
+        }
+
+        // Функция для выделения части ключа желтым цветом
+        function highlightKeyPart() {
+            const keyElement = document.querySelector('.vless-key');
+            if (keyElement) {
+                const keyText = keyElement.textContent;
+                // Выделяем последние символы после @ желтым цветом
+                const highlightedText = keyText.replace(/(@[a-zA-Z0-9]+)([^@]*)$/g, '<span class="key-ending">$1</span>$2');
+                keyElement.innerHTML = highlightedText;
+            }
+        }
+
+        // Функция выбора устройства
+        function selectDevice(deviceType) {
+            // Убираем активный класс со всех кнопок
+            document.querySelectorAll('.device-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Добавляем активный класс к выбранной кнопке
+            document.querySelector(`[data-device="${deviceType}"]`).classList.add('active');
+            
+            // Скрываем все карточки приложений
+            document.querySelectorAll('.app-card').forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            // Показываем секцию приложений
+            document.getElementById('apps-section').style.display = 'block';
+            
+            // Определяем индекс устройства и название
+            let deviceIndex, deviceName;
+            switch(deviceType) {
+                case 'ios':
+                    deviceIndex = 0;
+                    deviceName = 'iPhone / iPad';
+                    break;
+                case 'android':
+                    deviceIndex = 1;
+                    deviceName = 'Android';
+                    break;
+                case 'androidtv':
+                    deviceIndex = 2;
+                    deviceName = 'Android TV';
+                    break;
+                case 'windows':
+                    deviceIndex = 3;
+                    deviceName = 'Windows';
+                    break;
+            }
+            
+            // Обновляем название устройства
+            document.getElementById('selected-device-name').textContent = deviceName;
+            
+            // Показываем карточку выбранного устройства
+            const selectedCard = document.querySelector(`[data-device="${deviceIndex}"]`);
+            if (selectedCard) {
+                selectedCard.style.display = 'block';
+                selectedCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    </script>
+
+    <style>
+        /* Дополнительные стили для страницы установки */
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .subscription-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .subscription-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+            opacity: 0;
+        }
+
+        .subscription-card:hover::before {
+            animation: shimmer 2s ease-in-out infinite;
+        }
+
+        .subscription-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            border-color: #444;
+        }
+
+        .subscription-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .status-indicator {
+            position: relative;
+            margin-right: 12px;
+            margin-top: 2px;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .status-indicator.active .status-dot {
+            background: #00ff88;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        }
+
+        .status-indicator.expired .status-dot {
+            background: #ff4444;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+        }
+
+        .status-indicator.inactive .status-dot {
+            background: #888888;
+            box-shadow: 0 0 8px rgba(136, 136, 136, 0.6);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 12px;
+            height: 12px;
+            border: 1px solid;
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+        }
+
+        .status-indicator.active .pulse-ring {
+            border-color: #00ff88;
+        }
+
+        .status-indicator.expired .pulse-ring {
+            border-color: #ff4444;
+        }
+
+        .status-indicator.inactive .pulse-ring {
+            border-color: #888888;
+        }
+
+        .subscription-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .status-title {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            line-height: 1.2;
+        }
+
+        .server-location {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.85;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .server-location i {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .key-selector {
+            margin-top: 16px;
+        }
+
+        .key-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .key-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .key-select option {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .key-container {
+            margin-top: 16px;
+        }
+
+        .key-display {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .vless-key {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #00ff88;
+            word-break: break-all;
+            line-height: 1.4;
+            background: none;
+            border: none;
+            outline: none;
+        }
+
+        .key-ending {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+
+        .key-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-btn, .qr-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover, .qr-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .device-selection {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-align: center;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .device-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .device-btn {
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 12px 8px;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            min-height: 60px;
+            justify-content: center;
+        }
+
+        .device-btn:hover {
+            background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
+            border-color: #00ff88;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.2);
+        }
+
+        .device-btn.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+            border-color: #00ff88;
+            color: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+        }
+
+        .device-btn i {
+            font-size: 20px;
+        }
+
+        .device-btn span {
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .apps-section {
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .app-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .app-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border-color: #444;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #333, #444);
+            border-radius: 8px;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .app-info {
+            flex: 1;
+        }
+
+        .app-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-download {
+            background: linear-gradient(45deg, #0066cc, #0080ff);
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: linear-gradient(45deg, #0080ff, #00aaff);
+            transform: translateY(-1px);
+        }
+
+        .btn-connect {
+            background: linear-gradient(45deg, #022510, #006536);
+            color: white;
+        }
+
+        .btn-connect:hover {
+            background: linear-gradient(45deg, #018744, #082517);
+            transform: translateY(-1px);
+        }
+
+        .btn-qr {
+            background: linear-gradient(45deg, #ff6600, #ff8800);
+            color: white;
+        }
+
+        .btn-qr:hover {
+            background: linear-gradient(45deg, #ff8800, #ffaa00);
+            transform: translateY(-1px);
+        }
+
+        .btn-back {
+            background: linear-gradient(45deg, #333, #444);
+            color: white;
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .btn-back:hover {
+            background: linear-gradient(45deg, #444, #555);
+        }
+
+        .app-instructions {
+            border-top: 1px solid #333;
+            padding-top: 16px;
+        }
+
+        .instructions-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cccccc;
+        }
+
+        .instructions-list {
+            margin: 0;
+            padding-left: 20px;
+            color: #aaaaaa;
+        }
+
+        .app-instructions {
+            margin-top: 16px;
+        }
+
+        .instructions-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instructions-list {
+            list-style: none;
+            counter-reset: step-counter;
+            padding-left: 0;
+        }
+
+        .instructions-list li {
+            counter-increment: step-counter;
+            margin-bottom: 8px;
+            padding-left: 30px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .instructions-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #00ff88;
+            color: #0a0a0a;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #1e1e1e 0%, #141414 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            animation: fadeInUp 0.8s ease-out 0.8s both;
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .info-header i {
+            font-size: 18px;
+            color: #ffaa00;
+        }
+
+        .info-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .info-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .info-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-list li i {
+            font-size: 12px;
+            color: #00ff88;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .navigation {
+            margin-top: 20px;
+            animation: fadeInUp 0.8s ease-out 1s both;
+        }
+
+        .btn-back {
+            width: 100%;
+            padding: 14px 20px;
+            background: transparent;
+            border: 2px solid #ffffff;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: #ffffff;
+            color: #0a0a0a;
+            box-shadow: 0 8px 32px rgba(255, 255, 255, 0.15);
+        }
+
+        /* Модальное окно QR-кода */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-modal-content {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .qr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .qr-close {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .qr-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .qr-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .qr-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0;
+        }
+
+        /* Анимации */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2.2);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out both;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .subscription-card {
+                padding: 15px;
+            }
+            
+            .key-display {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .key-actions {
+                justify-content: center;
+            }
+            
+            .device-buttons {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 6px;
+            }
+            
+            .device-btn {
+                padding: 10px 6px;
+                min-height: 55px;
+                font-size: 11px;
+            }
+            
+            .device-btn i {
+                font-size: 18px;
+                margin-bottom: 2px;
+            }
+            
+            .device-btn span {
+                font-size: 10px;
+                font-weight: 600;
+                line-height: 1.2;
+            }
+            
+            .app-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 13px;
+                justify-content: center;
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .app-header {
+                flex-wrap: wrap; 
+                gap: 8px;
+            }
+            .app-icon {
+                width: 40px;
+            }
+            
+            .app-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+            
+            .app-header {
+                flex-wrap: wrap;
+            }
+            
+            .vless-key {
+                font-size: 11px;
+            }
+            
+            .qr-modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+        }
+    </style>
+</body>
+</html>

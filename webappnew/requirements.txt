@@ -1,0 +1,8 @@
+Flask==2.3.3
+python-dotenv
+loguru
+yookassa
+requests
+aiosqlite
+py3xui
+aiohttp

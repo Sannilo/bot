@@ -1,0 +1,33 @@
+<header class="app-header">
+    <div class="header-content">
+        <button class="back-btn" id="backButton" onclick="history.back()" style="display: none;">
+            <i class="fas fa-arrow-left"></i> 
+        </button>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="TOR VPN" class="logo-img">
+            <h1>TOR VPN</h1>
+        </div>
+        <div class="header-actions">
+           <!-- <button class="header-btn" onclick="toggleTheme()">
+                <i class="fas fa-moon"></i>
+            </button>-->
+        </div>
+    </div>
+</header>
+
+<script>
+// Управление видимостью кнопки "назад"
+document.addEventListener('DOMContentLoaded', function() {
+    const backButton = document.getElementById('backButton');
+    const currentPath = window.location.pathname;
+    
+    // Проверяем, находимся ли мы на главной странице
+    // Главная страница имеет формат /webapp/{user_id}
+    const isMainPage = /^\/webapp\/\d+$/.test(currentPath);
+    
+    // Показываем кнопку только если это НЕ главная страница
+    if (!isMainPage) {
+        backButton.style.display = 'block';
+    }
+});
+</script>
